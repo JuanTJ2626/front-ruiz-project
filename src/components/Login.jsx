@@ -1,0 +1,168 @@
+import React, { useState, useRef } from 'react';
+import gsap from 'gsap';
+import { useGSAP } from '@gsap/react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { Sphere, MeshDistortMaterial } from '@react-three/drei';
+import './Login.css';
+
+const AnimatedShape = ({ color, distort, speed, position, scale }) => {
+  const meshRef = useRef();
+  
+  useFrame((state) => {
+    const t = state.clock.getElapsedTime();
+    if (meshRef.current) {
+      meshRef.current.rotation.y = Math.sin(t / 4) / 2;
+      meshRef.current.rotation.z = t / 5;
+      meshRef.current.position.y = Math.sin(t / 2) * 0.5;
+    }
+  });
+
+  return (
+    <group position={position} scale={scale}>
+      <Sphere ref={meshRef} args={[1.5, 64, 64]}>
+        <MeshDistortMaterial
+          color={color}
+          attach="material"
+          distort={distort}
+          speed={speed}
+          roughness={0.2}
+          metalness={0.8}
+        />
+      </Sphere>
+    </group>
+  );
+};
+
+const Background3D = () => {
+  return (
+    <div className="three-bg-container">
+      <Canvas camera={{ position: [0, 0, 5], fov: 45 }}>
+        <ambientLight intensity={0.5} />
+        {/* Luces sutiles para resaltar los colores oscuros aurora */}
+        <directionalLight position={[10, 10, 5]} intensity={1.5} color="#ffffff" />
+        <directionalLight position={[-10, -10, -5]} intensity={2} color="#1E3A8A" />
+        
+        {/* Formas 3D con colores oscuros Aurora */}
+        {/* Azul Fuerte */}
+        <AnimatedShape color="#1E3A8A" distort={0.5} speed={1.5} position={[2.5, 0, -2]} scale={1.5} />
+        {/* Vino */}
+        <AnimatedShape color="#722F37" distort={0.6} speed={2} position={[-3, 1.5, -4]} scale={1.3} />
+        {/* Un tono intermedio oscuro para profundidad */}
+        <AnimatedShape color="#0f172a" distort={0.4} speed={1} position={[-2, -2, -1]} scale={1} />
+      </Canvas>
+    </div>
+  );
+};
+
+const Login = ({ onLogin }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isHovered, setIsHovered] = useState(false);
+  
+  const containerRef = useRef(null);
+  const cardRef = useRef(null);
+
+  useGSAP(() => {
+    const tl = gsap.timeline();
+
+    tl.fromTo(containerRef.current,
+      { opacity: 0 },
+      { opacity: 1, duration: 1, ease: 'power2.out' }
+    );
+
+    tl.fromTo(cardRef.current,
+      { y: 50, opacity: 0, scale: 0.95 },
+      { y: 0, opacity: 1, scale: 1, duration: 0.8, ease: 'back.out(1.5)' },
+      "-=0.5" 
+    );
+
+    const elementsToStagger = cardRef.current.querySelectorAll('.gsap-stagger');
+    tl.fromTo(elementsToStagger,
+      { y: 20, opacity: 0 },
+      { y: 0, opacity: 1, duration: 0.6, stagger: 0.1, ease: 'power2.out' },
+      "-=0.4"
+    );
+
+  }, { scope: containerRef });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (email && password) {
+      onLogin();
+    }
+  };
+
+  return (
+    <div className="apple-login-container" ref={containerRef}>
+      
+      {/* Fondo 3D Interactivo */}
+      <Background3D />
+
+      <div className="apple-login-card" ref={cardRef}>
+        <div className="apple-logo gsap-stagger">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16.148 10.985c.017-3.23 2.637-4.757 2.76-4.835-1.503-2.196-3.837-2.493-4.66-2.527-1.986-.2-3.882 1.173-4.896 1.173-1.013 0-2.584-1.144-4.223-1.112-2.138.032-4.103 1.24-5.206 3.155-2.228 3.86-.57 9.57 1.603 12.71 1.066 1.536 2.33 3.25 3.966 3.186 1.57-.065 2.167-1.02 4.07-1.02 1.89 0 2.44 1.02 4.08 1.002 1.68-.016 2.772-1.528 3.818-3.053 1.21-1.767 1.705-3.483 1.73-3.57-.038-.015-3.33-1.278-3.342-5.11zM11.69 3.018c.866-1.047 1.45-2.508 1.29-3.964-1.25.05-2.778.834-3.664 1.875-.79.923-1.488 2.417-1.298 3.844 1.4.108 2.805-.705 3.673-1.755z" fill="currentColor"/>
+          </svg>
+        </div>
+        
+        <h1 className="apple-login-title gsap-stagger">Inicia sesión en la plataforma</h1>
+        <p className="apple-login-subtitle gsap-stagger">Gestiona tus productos de forma eficiente</p>
+
+        <form onSubmit={handleSubmit} className="apple-login-form">
+          <div className="apple-input-group gsap-stagger">
+            <input 
+              type="email" 
+              className="apple-input" 
+              placeholder=" " 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <label className="apple-label">Correo electrónico</label>
+          </div>
+          
+          <div className="apple-input-group gsap-stagger">
+            <input 
+              type="password" 
+              className="apple-input" 
+              placeholder=" " 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            <label className="apple-label">Contraseña</label>
+          </div>
+
+          <div className="apple-options gsap-stagger">
+            <label className="apple-checkbox">
+              <input type="checkbox" />
+              <span>Recordarme</span>
+            </label>
+            <a href="#" className="apple-link">¿Olvidaste tu contraseña?</a>
+          </div>
+
+          <button 
+            type="submit" 
+            className="apple-btn gsap-stagger"
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            style={{
+              transform: isHovered ? 'scale(1.02)' : 'scale(1)',
+            }}
+          >
+            Continuar
+            <svg className="apple-btn-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+          </button>
+        </form>
+
+        <div className="apple-login-footer gsap-stagger">
+          <p>¿No tienes una cuenta? <a href="#" className="apple-link">Crea una ahora</a></p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Login;
