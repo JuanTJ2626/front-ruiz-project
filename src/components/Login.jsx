@@ -3,6 +3,7 @@ import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Sphere, MeshDistortMaterial } from '@react-three/drei';
+import { loginUser, registerUser } from '../services/authService';
 import './Login.css';
 
 const AnimatedShape = ({ color, distort, speed, position, scale }) => {
@@ -58,6 +59,9 @@ const Login = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isHovered, setIsHovered] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   
   const containerRef = useRef(null);
   const cardRef = useRef(null);
@@ -85,10 +89,27 @@ const Login = ({ onLogin }) => {
 
   }, { scope: containerRef });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    
     if (email && password) {
-      onLogin();
+      setLoading(true);
+      try {
+        if (isRegistering) {
+          // Usamos email como username para simplificar el formulario
+          await registerUser({ username: email, password, email });
+          alert('Registro exitoso. Ahora puedes iniciar sesión.');
+          setIsRegistering(false);
+        } else {
+          await loginUser({ username: email, password });
+          onLogin();
+        }
+      } catch (err) {
+        setError(err.message || 'Error de autenticación');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -105,8 +126,12 @@ const Login = ({ onLogin }) => {
           </svg>
         </div>
         
-        <h1 className="apple-login-title gsap-stagger">Inicia sesión en la plataforma</h1>
+        <h1 className="apple-login-title gsap-stagger">
+          {isRegistering ? 'Crea tu cuenta' : 'Inicia sesión en la plataforma'}
+        </h1>
         <p className="apple-login-subtitle gsap-stagger">Gestiona tus productos de forma eficiente</p>
+
+        {error && <p className="apple-login-error gsap-stagger" style={{ color: '#ff4d4d', textAlign: 'center', margin: '10px 0' }}>{error}</p>}
 
         <form onSubmit={handleSubmit} className="apple-login-form">
           <div className="apple-input-group gsap-stagger">
@@ -146,11 +171,13 @@ const Login = ({ onLogin }) => {
             className="apple-btn gsap-stagger"
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
+            disabled={loading}
             style={{
-              transform: isHovered ? 'scale(1.02)' : 'scale(1)',
+              transform: isHovered && !loading ? 'scale(1.02)' : 'scale(1)',
+              opacity: loading ? 0.7 : 1
             }}
           >
-            Continuar
+            {loading ? 'Procesando...' : 'Continuar'}
             <svg className="apple-btn-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M5 12h14M12 5l7 7-7 7"/>
             </svg>
@@ -158,7 +185,16 @@ const Login = ({ onLogin }) => {
         </form>
 
         <div className="apple-login-footer gsap-stagger">
-          <p>¿No tienes una cuenta? <a href="#" className="apple-link">Crea una ahora</a></p>
+          <p>
+            {isRegistering ? '¿Ya tienes una cuenta?' : '¿No tienes una cuenta?'}{' '}
+            <a href="#" className="apple-link" onClick={(e) => {
+              e.preventDefault();
+              setIsRegistering(!isRegistering);
+              setError('');
+            }}>
+              {isRegistering ? 'Inicia sesión' : 'Crea una ahora'}
+            </a>
+          </p>
         </div>
       </div>
     </div>
