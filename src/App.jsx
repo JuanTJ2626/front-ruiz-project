@@ -3,6 +3,7 @@ import './App.css';
 import { getProductos, crearProducto, eliminarProducto, actualizarProducto } from './services/productoService';
 import Login from './components/Login';
 import Sidebar from './components/Sidebar';
+import Dashboard from './components/Dashboard';
 import { motion, AnimatePresence } from 'motion/react';
 import gsap from 'gsap';
 import {
@@ -92,6 +93,7 @@ function App() {
     nombre: '', descripcion: '', precio: '', stock: ''
   });
   const [editingId, setEditingId] = useState(null);
+  const [currentPage, setCurrentPage] = useState('dashboard');
   const mainRef = useRef(null);
 
   const showToast = (message, type = 'success') => {
@@ -100,7 +102,7 @@ function App() {
   };
 
   useEffect(() => {
-    if (isAuthenticated && mainRef.current) {
+    if (isAuthenticated && mainRef.current && currentPage === 'productos') {
       const ctx = gsap.context(() => {
         gsap.fromTo('.admin-header', { y: -30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: 'power3.out' });
         gsap.fromTo('.stat-card', { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, stagger: 0.08, ease: 'power3.out', delay: 0.15 });
@@ -108,7 +110,7 @@ function App() {
       }, mainRef);
       return () => ctx.revert();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, currentPage]);
 
   useEffect(() => { cargarProductos(); }, []);
 
@@ -199,7 +201,7 @@ function App() {
 
   return (
     <div className="app-layout">
-      <Sidebar onLogout={() => setIsAuthenticated(false)} />
+      <Sidebar onLogout={() => setIsAuthenticated(false)} activePage={currentPage} onNavigate={setCurrentPage} />
 
       <AnimatePresence>
         {deleteTarget && <DeleteModal product={deleteTarget} onConfirm={handleDeleteConfirm} onCancel={() => setDeleteTarget(null)} />}
@@ -210,6 +212,9 @@ function App() {
       </AnimatePresence>
 
       <main className="main-content" ref={mainRef}>
+        {currentPage === 'dashboard' && <Dashboard productos={productos} />}
+
+        {currentPage === 'productos' && (
         <div className="admin-container">
 
           {/* ══════ Header ══════ */}
@@ -349,6 +354,7 @@ function App() {
             )}
           </div>
         </div>
+        )}
       </main>
 
       {/* ══════ Slide-over Form ══════ */}
