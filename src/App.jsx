@@ -1,9 +1,13 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import './App.css';
 import { getProductos, crearProducto, eliminarProducto, actualizarProducto } from './services/productoService';
 import Login from './components/Login';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
+import StockDashboard from './components/StockDashboard';
+import ProveedoresDashboard from './components/ProveedoresDashboard';
+import ClientesDashboard from './components/ClientesDashboard';
+import ReportesDashboard from './components/ReportesDashboard';
+import ConfiguracionDashboard from './components/ConfiguracionDashboard';
 import { motion, AnimatePresence } from 'motion/react';
 import gsap from 'gsap';
 import { toast } from 'sonner';
@@ -16,6 +20,7 @@ import { Input } from './components/ui/input';
 import { Label } from './components/ui/label';
 import { Textarea } from './components/ui/textarea';
 import { Card, CardContent } from './components/ui/card';
+import { AuroraStatCard } from './components/ui/aurora-card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './components/ui/table';
 import { Skeleton } from './components/ui/skeleton';
 
@@ -25,31 +30,6 @@ import {
   AlertTriangle, X, Check, Loader2
 } from 'lucide-react';
 
-/* ───────────────── Stat Card ───────────────── */
-const StatCard = ({ icon: Icon, label, value, sub, delay }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 30 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.5, delay }}
-  >
-    <Card className="h-auto border-muted/40 shadow-sm transition-all hover:shadow-md hover:-translate-y-1">
-      <CardContent className="p-6 flex flex-col justify-between">
-        <div className="flex items-start justify-between mb-4">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-muted/50 text-foreground shadow-sm">
-            <Icon size={22} strokeWidth={1.5} />
-          </div>
-        </div>
-        <div>
-          <p className="text-sm font-medium text-muted-foreground mb-1">{label}</p>
-          <p className="text-3xl font-bold tracking-tight text-foreground">{value}</p>
-          {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
-        </div>
-      </CardContent>
-    </Card>
-  </motion.div>
-);
-
-/* ═════════════════ Main App ═════════════════ */
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [productos, setProductos] = useState([]);
@@ -169,13 +149,11 @@ function App() {
   }
 
   return (
-    <div className="app-layout">
-      {/* ── Toasts ── */}
+    <div className="flex min-h-screen bg-background">
       <Toaster position="bottom-right" richColors />
 
       <Sidebar onLogout={() => setIsAuthenticated(false)} activePage={currentPage} onNavigate={setCurrentPage} />
 
-      {/* ── Dialog Shadcn ── */}
       <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <DialogContent className="max-w-sm rounded-[24px] p-6">
           <DialogHeader>
@@ -194,7 +172,6 @@ function App() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Sheet Shadcn ── */}
       <Sheet open={showForm} onOpenChange={(open) => !open && cancelForm()}>
         <SheetContent side="right" className="w-[480px] max-w-full flex flex-col p-0 gap-0 border-l">
           <SheetHeader className="px-8 py-6 border-b shrink-0 bg-muted/20">
@@ -226,7 +203,7 @@ function App() {
               </div>
             </div>
           </form>
-          
+
           <div className="px-8 py-5 border-t flex justify-end gap-3 shrink-0 bg-muted/20">
             <Button type="button" variant="outline" onClick={cancelForm} className="rounded-xl h-11 px-6">Cancelar</Button>
             <Button onClick={handleSubmit} disabled={saving} className="rounded-xl h-11 px-8 gap-2 shadow-md">
@@ -237,14 +214,18 @@ function App() {
         </SheetContent>
       </Sheet>
 
-      <main className="main-content" ref={mainRef}>
+      <main className="flex-1 ml-0 md:ml-40 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]" ref={mainRef}>
         {currentPage === 'dashboard' && <Dashboard productos={productos} />}
+        {currentPage === 'stock' && <StockDashboard productos={productos} />}
+        {currentPage === 'proveedores' && <ProveedoresDashboard />}
+        {currentPage === 'clientes' && <ClientesDashboard />}
+        {currentPage === 'reportes' && <ReportesDashboard productos={productos} />}
+        {currentPage === 'configuracion' && <ConfiguracionDashboard />}
 
         {currentPage === 'productos' && (
-        <div className="admin-container">
+        <div className="dashboard-aurora-bg relative min-h-screen p-6 lg:p-10">
 
-          {/* ══════ Header ══════ */}
-          <div className="admin-header flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+          <div className="admin-header relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
             <div>
               <h1 className="text-3xl font-bold tracking-tight text-foreground">Panel de Inventario</h1>
               <p className="text-muted-foreground mt-1 text-[15px]">Administra y controla tu inventario en tiempo real</p>
@@ -255,16 +236,14 @@ function App() {
             </Button>
           </div>
 
-          {/* ══════ Stats ══════ */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <StatCard icon={Package} label="Total Productos" value={productos.length} sub="en catálogo" delay={0.05} />
-            <StatCard icon={Archive} label="Unidades en Stock" value={stats.totalStock.toLocaleString()} sub="unidades totales" delay={0.1} />
-            <StatCard icon={DollarSign} label="Valor del Inventario" value={`$${stats.totalValue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`} sub="precio × stock" delay={0.15} />
-            <StatCard icon={AlertTriangle} label="Stock Bajo" value={stats.lowStock} sub="≤ 5 unidades" delay={0.2} />
+          <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <AuroraStatCard icon={Package} label="Total Productos" value={productos.length} sub="en catálogo" glow="cyan" delay={80} />
+            <AuroraStatCard icon={Archive} label="Unidades en Stock" value={stats.totalStock.toLocaleString()} sub="unidades totales" glow="emerald" delay={160} />
+            <AuroraStatCard icon={DollarSign} label="Valor del Inventario" value={`$${stats.totalValue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`} sub="precio × stock" glow="violet" delay={240} />
+            <AuroraStatCard icon={AlertTriangle} label="Stock Bajo" value={stats.lowStock} sub="≤ 5 unidades" glow="amber" delay={320} />
           </div>
 
-          {/* ══════ Content ══════ */}
-          <div className="content-area">
+          <div className="content-area relative z-10">
             <Card className="border-muted/40 shadow-sm rounded-2xl overflow-hidden">
               <div className="p-5 border-b border-muted/40 bg-muted/10 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="relative w-full sm:max-w-sm">
@@ -293,7 +272,6 @@ function App() {
                 </div>
               </div>
 
-              {/* Product Display */}
               <div className="p-6 bg-background">
                 {loading ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
