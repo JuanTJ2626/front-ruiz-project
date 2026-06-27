@@ -10,11 +10,10 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localho
 export const fetchApi = async (endpoint, options = {}) => {
     const url = `${API_BASE_URL}${endpoint}`;
     
-    // Aquí puedes interceptar peticiones para añadir tokens de autorización
-    // const token = localStorage.getItem('token');
-    // if (token) {
-    //   options.headers = { ...options.headers, 'Authorization': `Bearer ${token}` };
-    // }
+    const token = localStorage.getItem('token');
+    if (token) {
+        options.headers = { ...options.headers, 'Authorization': `Bearer ${token}` };
+    }
 
     const response = await fetch(url, options);
     

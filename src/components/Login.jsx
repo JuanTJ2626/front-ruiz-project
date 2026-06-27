@@ -4,6 +4,7 @@ import { useGSAP } from '@gsap/react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Sphere, MeshDistortMaterial } from '@react-three/drei';
 import { loginUser, registerUser } from '../services/authService';
+import { toast } from 'sonner';
 import './Login.css';
 
 const AnimatedShape = ({ color, distort, speed, position, scale }) => {
@@ -60,7 +61,6 @@ const Login = ({ onLogin }) => {
   const [password, setPassword] = useState('');
   const [isHovered, setIsHovered] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
   const containerRef = useRef(null);
@@ -91,7 +91,6 @@ const Login = ({ onLogin }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
     
     if (email && password) {
       setLoading(true);
@@ -99,14 +98,15 @@ const Login = ({ onLogin }) => {
         if (isRegistering) {
           // Usamos email como username para simplificar el formulario
           await registerUser({ username: email, password, email });
-          alert('Registro exitoso. Ahora puedes iniciar sesión.');
+          toast.success('Registro exitoso. Ahora puedes iniciar sesión.');
           setIsRegistering(false);
         } else {
           await loginUser({ username: email, password });
+          toast.success('Sesión iniciada correctamente');
           onLogin();
         }
       } catch (err) {
-        setError(err.message || 'Error de autenticación');
+        toast.error(err.message || 'Error de autenticación');
       } finally {
         setLoading(false);
       }
@@ -128,8 +128,6 @@ const Login = ({ onLogin }) => {
           {isRegistering ? 'Crea tu cuenta' : 'Inicia sesión en la plataforma'}
         </h1>
         <p className="apple-login-subtitle gsap-stagger">Gestiona tus productos de forma eficiente</p>
-
-        {error && <p className="apple-login-error gsap-stagger" style={{ color: '#ff4d4d', textAlign: 'center', margin: '10px 0' }}>{error}</p>}
 
         <form onSubmit={handleSubmit} className="apple-login-form">
           <div className="apple-input-group gsap-stagger">
