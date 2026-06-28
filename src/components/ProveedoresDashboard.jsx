@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect, useCallback } from 'react'
 import { motion } from 'motion/react'
 import {
   Truck, Plus, Mail, Phone, Search, Package, Clock,
@@ -13,6 +13,7 @@ import { Label } from './ui/label'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from './ui/sheet'
 import { toast } from 'sonner'
 import { cn } from '#/lib/utils'
+import { getProveedores, crearProveedor } from '../services/proveedorService'
 
 const INITIAL_PROVEEDORES = [
   { id: 1, nombre: 'Distribuidora del Norte SA', contacto: 'Roberto Sánchez', email: 'ventas@distnorte.mx', telefono: '81 4000 1234', pedidosPendientes: 2, productos: 45, estado: 'Activo' },
@@ -64,11 +65,23 @@ const ProveedorRow = ({ proveedor, index }) => (
 )
 
 const ProveedoresDashboard = () => {
-  const [proveedores, setProveedores] = useState(INITIAL_PROVEEDORES)
+  const [proveedores, setProveedores] = useState([])
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({ nombre: '', contacto: '', email: '', telefono: '' })
+
+  const cargar = useCallback(async () => {
+    try {
+      setLoading(true)
+      const data = await getProveedores()
+      setProveedores(Array.isArray(data) ? data : [])
+    } catch { toast.error('No se pudieron cargar los proveedores') }
+    finally { setLoading(false) }
+  }, [])
+
+  useEffect(() => { cargar() }, [cargar])
 
   const filtered = useMemo(() => {
     if (!search.trim()) return proveedores
@@ -82,26 +95,25 @@ const ProveedoresDashboard = () => {
 
   const stats = useMemo(() => ({
     total: proveedores.length,
-    activos: proveedores.filter(p => p.estado === 'Activo').length,
-    pedidos: proveedores.reduce((s, p) => s + p.pedidosPendientes, 0),
-    productos: proveedores.reduce((s, p) => s + p.productos, 0),
+    activos: proveedores.length,
+    pedidos: 0,
+    productos: 0,
   }), [proveedores])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSaving(true)
-    await new Promise(r => setTimeout(r, 600))
-    setProveedores(prev => [...prev, {
-      id: Date.now(),
-      ...form,
-      pedidosPendientes: 0,
-      productos: 0,
-      estado: 'Activo',
-    }])
-    setForm({ nombre: '', contacto: '', email: '', telefono: '' })
-    setShowForm(false)
-    setSaving(false)
-    toast.success('Proveedor registrado correctamente')
+    try {
+      await crearProveedor(form)
+      toast.success('Proveedor registrado correctamente')
+      setForm({ nombre: '', contacto: '', email: '', telefono: '' })
+      setShowForm(false)
+      cargar()
+    } catch (err) {
+      toast.error(err.message || 'Error al guardar proveedor')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (

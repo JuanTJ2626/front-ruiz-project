@@ -10,6 +10,7 @@ import { cn } from '#/lib/utils'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import ParticleField from './ParticleField'
+import { getDashboard } from '../services/dashboardService'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -94,13 +95,31 @@ const LowStockItem = ({ name, stock, index }) => (
 ════════════════════════════════════════════════════════════ */
 const Dashboard = ({ productos }) => {
   const dashRef = useRef(null)
+  const [dashData, setDashData] = useState(null)
+
+  // Carga los datos del endpoint /dashboard/negocio/{id}
+  useEffect(() => {
+    getDashboard()
+      .then(data => setDashData(data))
+      .catch(() => {/* fallback a props */})
+  }, [])
+
+  // Usa datos del backend si están disponibles, fallback a props
+  const totalProductos = dashData?.totalProductos ?? productos.length
+  const totalStock = dashData ? null : productos.reduce((s, p) => s + (p.stock || 0), 0)
+  const totalValue = dashData?.valorTotalInventario ?? productos.reduce((s, p) => s + ((p.precio || 0) * (p.stock || 0)), 0)
+  const lowStockCount = dashData?.productosStockCritico ?? productos.filter(p => p.stock <= 5).length
+  const recentMovimientos = dashData?.ultimosMovimientos ?? []
+  const productosBajoStock = dashData?.productosBajoStock ?? productos.filter(p => p.stock <= 5)
 
   const stats = useMemo(() => {
-    const totalStock = productos.reduce((s, p) => s + (p.stock || 0), 0)
-    const totalValue = productos.reduce((s, p) => s + ((p.precio || 0) * (p.stock || 0)), 0)
-    const lowStock = productos.filter(p => p.stock <= 5)
-    return { totalStock, totalValue, lowStock }
-  }, [productos])
+    const ts = totalStock ?? productos.reduce((s, p) => s + (p.stock || 0), 0)
+    return {
+      totalStock: ts,
+      totalValue,
+      lowStock: productosBajoStock,
+    }
+  }, [totalStock, totalValue, productosBajoStock, productos])
 
   const lowItems = useMemo(
     () => [...productos].filter(p => p.stock <= 5).sort((a, b) => a.stock - b.stock),
@@ -251,46 +270,23 @@ const Dashboard = ({ productos }) => {
         {/* ── KPIs ── */}
         <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <div className="gsap-kpi">
-            <AuroraStatCard
-              icon={Package}
-              label="Total Productos"
-              value={productos.length}
-              sub="en catálogo activo"
-              glow="cyan"
-              delay={0}
-            />
+            <AuroraStatCard icon={Package} label="Total Productos" value={totalProductos} sub="en catálogo activo" glow="cyan" delay={0} />
+          </div>
+          <div className="gsap-kpi">
+            <AuroraStatCard icon={Archive} label="Stock Total" value={stats.totalStock} sub="unidades en inventario" glow="emerald" delay={0} />
+          </div>
+          <div className="gsap-kpi">
+            <AuroraStatCard icon={DollarSign} label="Valor del Inventario" value={stats.totalValue} prefix="$" decimals={2} sub="precio × stock en tiempo real" glow="violet" delay={0} />
           </div>
           <div className="gsap-kpi">
             <AuroraStatCard
-              icon={Archive}
-              label="Stock Total"
-              value={stats.totalStock}
-              sub="unidades en inventario"
-              glow="emerald"
-              delay={0}
-            />
-          </div>
-          <div className="gsap-kpi">
-            <AuroraStatCard
-              icon={DollarSign}
-              label="Valor del Inventario"
-              value={stats.totalValue}
-              prefix="$"
-              decimals={2}
-              sub="precio × stock en tiempo real"
-              glow="violet"
-              delay={0}
-            />
-          </div>
-          <div className="gsap-kpi">
-            <AuroraStatCard
-              icon={stats.lowStock.length > 0 ? AlertTriangle : CheckCircle2}
+              icon={lowStockCount > 0 ? AlertTriangle : CheckCircle2}
               label="Stock Crítico"
-              value={stats.lowStock.length}
-              sub={stats.lowStock.length > 0 ? 'productos ≤ 5 unidades' : 'Todo en orden'}
-              glow={stats.lowStock.length > 0 ? 'rose' : 'emerald'}
+              value={lowStockCount}
+              sub={lowStockCount > 0 ? 'productos ≤ mínimo' : 'Todo en orden'}
+              glow={lowStockCount > 0 ? 'rose' : 'emerald'}
               delay={0}
-              trend={stats.lowStock.length > 0 ? `${stats.lowStock.length} alertas` : '✓ Saludable'}
+              trend={lowStockCount > 0 ? `${lowStockCount} alertas` : '✓ Saludable'}
             />
           </div>
         </div>

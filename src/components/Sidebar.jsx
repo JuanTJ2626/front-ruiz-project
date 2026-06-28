@@ -35,9 +35,19 @@ const LoginStyleBubble = ({ isHovered }) => {
   );
 };
 
-const Sidebar = ({ onLogout, activePage, onNavigate }) => {
+const Sidebar = ({ onLogout }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const activePage = location.pathname.replace('/', '') || 'dashboard';
   const [isHovered, setIsHovered] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(true);
+
+  // Persiste el tema en localStorage — arranca en claro si no hay preferencia guardada
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const saved = localStorage.getItem('theme');
+    if (saved) return saved === 'dark';
+    return false; // siempre claro por defecto
+  });
+
   const containerRef = useRef(null);
   const contentRef = useRef(null);
   const iconRef = useRef(null);
@@ -45,8 +55,10 @@ const Sidebar = ({ onLogout, activePage, onNavigate }) => {
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
     }
   }, [isDarkMode]);
 
@@ -173,7 +185,7 @@ const Sidebar = ({ onLogout, activePage, onNavigate }) => {
                     ? 'border border-cyan-500/25 bg-cyan-500/12 text-teal-300 shadow-[0_4px_15px_rgba(0,0,0,0.2)] [&_.nav-icon]:text-teal-400'
                     : 'text-zinc-400 hover:bg-white/8 hover:text-white'
                 )}
-                onClick={() => onNavigate?.(item.id)}
+                onClick={() => navigate(`/${item.id}`)}
               >
                 <div className="nav-icon flex w-6 shrink-0 items-center justify-center">{item.icon}</div>
                 <span className="whitespace-nowrap font-sans text-[0.95rem] font-semibold">{item.label}</span>

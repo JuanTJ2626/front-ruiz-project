@@ -1,31 +1,52 @@
-import { fetchApi } from './config';
+import { fetchApi, getNegocioId } from './config';
 
-export const getProductos = async () => {
-    return fetchApi('/productos');
+/* ── Productos ────────────────────────────────────────────── */
+
+/** Todos los productos del negocio actual */
+export const getProductos = () => {
+  const negocioId = getNegocioId();
+  return fetchApi(`/productos/negocio/${negocioId}`);
 };
 
-export const crearProducto = async (producto) => {
-    return fetchApi('/productos', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(producto),
-    });
+/** Productos con stock crítico del negocio actual */
+export const getProductosBajoStock = () => {
+  const negocioId = getNegocioId();
+  return fetchApi(`/productos/bajo-stock/${negocioId}`);
 };
 
-export const actualizarProducto = async (id, producto) => {
-    return fetchApi(`/productos/${id}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(producto),
-    });
+/** Productos por categoría */
+export const getProductosPorCategoria = (catId) => {
+  const negocioId = getNegocioId();
+  return fetchApi(`/productos/categoria/${catId}/negocio/${negocioId}`);
 };
 
-export const eliminarProducto = async (id) => {
-    return fetchApi(`/productos/${id}`, {
-        method: 'DELETE',
-    });
+/** Buscar productos por nombre en el negocio */
+export const buscarProductos = (nombre) => {
+  const negocioId = getNegocioId();
+  return fetchApi(`/productos/buscar/negocio/${negocioId}?nombre=${encodeURIComponent(nombre)}`);
 };
+
+/** Un producto por ID */
+export const getProducto = (id) => fetchApi(`/productos/${id}`);
+
+/** Crear producto — negocioId se agrega automáticamente */
+export const crearProducto = (producto) => {
+  const negocioId = getNegocioId();
+  return fetchApi('/productos', {
+    method: 'POST',
+    body: JSON.stringify({ ...producto, negocioId: Number(negocioId) }),
+  });
+};
+
+/** Actualizar producto */
+export const actualizarProducto = (id, producto) => {
+  const negocioId = getNegocioId();
+  return fetchApi(`/productos/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ ...producto, negocioId: Number(negocioId) }),
+  });
+};
+
+/** Eliminar producto */
+export const eliminarProducto = (id) =>
+  fetchApi(`/productos/${id}`, { method: 'DELETE' });

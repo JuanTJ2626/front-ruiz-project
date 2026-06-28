@@ -87,23 +87,13 @@ const ReportesDashboard = ({ productos = [] }) => {
   }, [stats.totalValue])
 
   const handleExport = async (format) => {
-    const token = localStorage.getItem('token')
-    const endpoint = format === 'pdf' ? '/reportes/inventario/pdf' : '/reportes/inventario/csv'
+    const { exportarCSV, exportarPDF } = await import('../services/dashboardService')
     try {
-      const res = await fetch(`${API_BASE_URL}${endpoint}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      })
-      if (!res.ok) throw new Error('Endpoint no disponible')
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `inventario.${format}`
-      a.click()
-      URL.revokeObjectURL(url)
-      toast.success(`Reporte ${format.toUpperCase()} descargado`)
+      if (format === 'pdf') exportarPDF()
+      else exportarCSV()
+      toast.success(`Descargando reporte ${format.toUpperCase()}...`)
     } catch {
-      toast.info(`Exportación ${format.toUpperCase()} — conecta el endpoint ${endpoint} en tu backend Spring Boot`)
+      toast.error(`Error al descargar el reporte ${format.toUpperCase()}`)
     }
   }
 

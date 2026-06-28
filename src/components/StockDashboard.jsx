@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect, useCallback } from 'react'
 import { motion } from 'motion/react'
 import {
   Archive, ArrowDownCircle, ArrowUpCircle, RefreshCw, AlertTriangle,
@@ -13,24 +13,20 @@ import { Label } from './ui/label'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from './ui/sheet'
 import { toast } from 'sonner'
 import { cn } from '#/lib/utils'
+import { registrarMovimiento, getMovimientosNegocio } from '../services/movimientoService'
+import { getNegocioId, getUsuarioId } from '../services/config'
 
 const TIPO_CONFIG = {
-  entrada: { label: 'Entrada', icon: ArrowDownCircle, color: 'text-emerald-400', bg: 'border-emerald-500/30 bg-emerald-500/10' },
-  salida: { label: 'Salida', icon: ArrowUpCircle, color: 'text-red-400', bg: 'border-red-500/30 bg-red-500/10' },
-  ajuste: { label: 'Ajuste', icon: RefreshCw, color: 'text-amber-400', bg: 'border-amber-500/30 bg-amber-500/10' },
+  ENTRADA: { label: 'Entrada', icon: ArrowDownCircle, color: 'text-emerald-400', bg: 'border-emerald-500/30 bg-emerald-500/10' },
+  SALIDA:  { label: 'Salida',  icon: ArrowUpCircle,   color: 'text-red-400',     bg: 'border-red-500/30 bg-red-500/10' },
+  AJUSTE:  { label: 'Ajuste',  icon: RefreshCw,       color: 'text-amber-400',   bg: 'border-amber-500/30 bg-amber-500/10' },
 }
 
-const DEMO_MOVIMIENTOS = [
-  { id: 1, producto: 'Arroz 1kg', tipo: 'entrada', cantidad: 50, fecha: '2026-06-27 09:15', usuario: 'Admin' },
-  { id: 2, producto: 'Aceite Vegetal', tipo: 'salida', cantidad: 12, fecha: '2026-06-27 08:42', usuario: 'Empleado' },
-  { id: 3, producto: 'Detergente Líquido', tipo: 'ajuste', cantidad: -3, fecha: '2026-06-26 17:30', usuario: 'Admin' },
-  { id: 4, producto: 'Papel Higiénico', tipo: 'entrada', cantidad: 100, fecha: '2026-06-26 14:00', usuario: 'Admin' },
-  { id: 5, producto: 'Café Molido', tipo: 'salida', cantidad: 8, fecha: '2026-06-26 11:20', usuario: 'Empleado' },
-  { id: 6, producto: 'Azúcar Refinada', tipo: 'entrada', cantidad: 30, fecha: '2026-06-25 16:45', usuario: 'Admin' },
-]
+
 
 const MovimientoRow = ({ mov, index }) => {
-  const cfg = TIPO_CONFIG[mov.tipo]
+  const tipo = mov.tipo || 'ENTRADA'
+  const cfg = TIPO_CONFIG[tipo] || TIPO_CONFIG.ENTRADA
   const Icon = cfg.icon
   return (
     <motion.div
@@ -43,12 +39,15 @@ const MovimientoRow = ({ mov, index }) => {
         <Icon size={18} className={cfg.color} />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-bold text-foreground">{mov.producto}</p>
-        <p className="text-xs text-muted-foreground">{mov.fecha} · {mov.usuario}</p>
+        <p className="truncate text-sm font-bold text-foreground">{mov.productoNombre || mov.producto}</p>
+        <p className="text-xs text-muted-foreground">
+          {mov.fecha ? new Date(mov.fecha).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' }) : ''}
+          {mov.usuarioNombre ? ` · ${mov.usuarioNombre}` : ''}
+          {mov.motivo ? ` · ${mov.motivo}` : ''}
+        </p>
       </div>
       <Badge variant="outline" className={cn('shrink-0 font-bold', cfg.bg, cfg.color)}>
-        {mov.tipo === 'ajuste' && mov.cantidad < 0 ? '' : mov.tipo === 'salida' ? '-' : '+'}
-        {Math.abs(mov.cantidad)} uds
+        {tipo === 'SALIDA' ? '-' : '+'}{Math.abs(mov.cantidad)} uds
       </Badge>
       <Badge variant="outline" className="hidden shrink-0 border-white/10 sm:inline-flex">
         {cfg.label}
@@ -58,48 +57,71 @@ const MovimientoRow = ({ mov, index }) => {
 }
 
 const StockDashboard = ({ productos = [] }) => {
-  const [movimientos, setMovimientos] = useState(DEMO_MOVIMIENTOS)
+  const [movimientos, setMovimientos] = useState([])
+  const [loadingMovs, setLoadingMovs] = useState(true)
   const [search, setSearch] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState({ producto: '', tipo: 'entrada', cantidad: '' })
+  const [form, setForm] = useState({ productoId: '', tipo: 'ENTRADA', cantidad: '', motivo: '' })
+
+  const cargarMovimientos = useCallback(async () => {
+    try {
+      setLoadingMovs(true)
+      const data = await getMovimientosNegocio(30)
+      setMovimientos(Array.isArray(data) ? data : [])
+    } catch {
+      toast.error('No se pudieron cargar los movimientos')
+    } finally {
+      setLoadingMovs(false)
+    }
+  }, [])
+
+  useEffect(() => { cargarMovimientos() }, [cargarMovimientos])
 
   const stats = useMemo(() => {
     const totalStock = productos.reduce((s, p) => s + (p.stock || 0), 0)
-    const lowStock = productos.filter(p => p.stock <= 5)
-    const entradas = movimientos.filter(m => m.tipo === 'entrada').reduce((s, m) => s + m.cantidad, 0)
-    const salidas = movimientos.filter(m => m.tipo === 'salida').reduce((s, m) => s + m.cantidad, 0)
+    const lowStock = productos.filter(p => p.stock <= (p.stockMinimo || 5))
+    const entradas = movimientos.filter(m => m.tipo === 'ENTRADA').reduce((s, m) => s + m.cantidad, 0)
+    const salidas  = movimientos.filter(m => m.tipo === 'SALIDA').reduce((s, m) => s + m.cantidad, 0)
     return { totalStock, lowStock, entradas, salidas }
   }, [productos, movimientos])
 
   const filtered = useMemo(() => {
     if (!search.trim()) return movimientos
     const q = search.toLowerCase()
-    return movimientos.filter(m => m.producto.toLowerCase().includes(q) || m.tipo.includes(q))
+    return movimientos.filter(m =>
+      (m.productoNombre || '').toLowerCase().includes(q) ||
+      (m.tipo || '').toLowerCase().includes(q) ||
+      (m.motivo || '').toLowerCase().includes(q)
+    )
   }, [movimientos, search])
 
   const lowItems = useMemo(
-    () => [...productos].filter(p => p.stock <= 5).sort((a, b) => a.stock - b.stock).slice(0, 5),
+    () => [...productos].filter(p => p.stock <= (p.stockMinimo || 5)).sort((a, b) => a.stock - b.stock).slice(0, 5),
     [productos]
   )
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSaving(true)
-    await new Promise(r => setTimeout(r, 600))
-    const cantidad = parseInt(form.cantidad)
-    setMovimientos(prev => [{
-      id: Date.now(),
-      producto: form.producto,
-      tipo: form.tipo,
-      cantidad: form.tipo === 'salida' ? cantidad : form.tipo === 'ajuste' ? cantidad : cantidad,
-      fecha: new Date().toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' }).replace(',', ''),
-      usuario: 'Admin',
-    }, ...prev])
-    setForm({ producto: '', tipo: 'entrada', cantidad: '' })
-    setShowForm(false)
-    setSaving(false)
-    toast.success(`Movimiento de ${form.tipo} registrado`)
+    try {
+      const usuarioId = Number(getUsuarioId())
+      await registrarMovimiento({
+        tipo: form.tipo,
+        cantidad: parseInt(form.cantidad),
+        motivo: form.motivo || undefined,
+        productoId: Number(form.productoId),
+        usuarioId,
+      })
+      toast.success(`Movimiento de ${form.tipo.toLowerCase()} registrado`)
+      setForm({ productoId: '', tipo: 'ENTRADA', cantidad: '', motivo: '' })
+      setShowForm(false)
+      cargarMovimientos()
+    } catch (err) {
+      toast.error(err.message || 'Error al registrar movimiento')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -204,10 +226,18 @@ const StockDashboard = ({ productos = [] }) => {
           <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-5 overflow-y-auto px-8 py-6">
             <div className="space-y-2">
               <Label htmlFor="s-producto">Producto</Label>
-              <Input id="s-producto" list="productos-list" value={form.producto} onChange={e => setForm({ ...form, producto: e.target.value })} required className="h-11 rounded-xl" placeholder="Nombre del producto" />
-              <datalist id="productos-list">
-                {productos.map(p => <option key={p.id} value={p.nombre} />)}
-              </datalist>
+              <select
+                id="s-producto"
+                value={form.productoId}
+                onChange={e => setForm({ ...form, productoId: e.target.value })}
+                required
+                className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground"
+              >
+                <option value="">Selecciona un producto...</option>
+                {productos.map(p => (
+                  <option key={p.id} value={p.id}>{p.nombre} — Stock: {p.stock}</option>
+                ))}
+              </select>
             </div>
             <div className="space-y-2">
               <Label>Tipo de movimiento</Label>
@@ -234,6 +264,10 @@ const StockDashboard = ({ productos = [] }) => {
             <div className="space-y-2">
               <Label htmlFor="s-cant">Cantidad</Label>
               <Input id="s-cant" type="number" min="1" value={form.cantidad} onChange={e => setForm({ ...form, cantidad: e.target.value })} required className="h-11 rounded-xl" placeholder="0" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="s-motivo">Motivo <span className="text-muted-foreground">(opcional)</span></Label>
+              <Input id="s-motivo" value={form.motivo} onChange={e => setForm({ ...form, motivo: e.target.value })} className="h-11 rounded-xl" placeholder="Ej. Venta mostrador, Ajuste de inventario..." />
             </div>
           </form>
           <div className="flex shrink-0 justify-end gap-3 border-t bg-muted/20 px-8 py-5">
