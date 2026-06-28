@@ -1,8 +1,9 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Sphere, MeshDistortMaterial } from '@react-three/drei';
 import * as THREE from 'three';
 import gsap from 'gsap';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '../lib/utils';
 
 const LoginStyleBubble = ({ isHovered }) => {

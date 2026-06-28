@@ -386,116 +386,64 @@
     box-shadow: 0 20px 60px rgba(0,0,0,0.12), 0 1px 0 rgba(255,255,255,0.8) inset;
   }
 
-  /* ── CYAN: azul cielo + teal (Total Productos) ── */
+  /* ── CYAN: azul cielo + teal ── */
   .aurora-card-kpi.aurora-kpi-cyan .aurora-card-inner {
-    background:
-      radial-gradient(ellipse 90% 90% at 15% 10%, #7dd3fc 0%, transparent 60%),
-      radial-gradient(ellipse 80% 80% at 85% 85%, #34d399 0%, transparent 60%),
-      radial-gradient(ellipse 60% 60% at 80% 10%, #a5f3fc 0%, transparent 55%),
-      #bfdbfe;
-    box-shadow: 0 20px 60px rgba(56,189,248,0.30), 0 1px 0 rgba(255,255,255,0.9) inset;
+    background: linear-gradient(225deg, #7dd3fc 0%, #a5f3fc 25%, #cffafe 55%, #ecfdf5 80%, #f0fdfa 100%);
+    box-shadow: 0 20px 60px rgba(56,189,248,0.28), 0 1px 0 rgba(255,255,255,0.9) inset;
   }
   .dark .aurora-card-kpi.aurora-kpi-cyan .aurora-card-inner {
-    background:
-      radial-gradient(ellipse 90% 90% at 15% 10%, #0891b2 0%, transparent 60%),
-      radial-gradient(ellipse 80% 80% at 85% 85%, #059669 0%, transparent 60%),
-      radial-gradient(ellipse 60% 60% at 80% 10%, #164e63 0%, transparent 55%),
-      #0c1a2e;
-    box-shadow: 0 20px 60px rgba(6,182,212,0.35), 0 1px 0 rgba(255,255,255,0.08) inset;
+    background: linear-gradient(225deg, #0e7490 0%, #0891b2 20%, #155e75 55%, #064e3b 85%, #022c22 100%);
+    box-shadow: 0 20px 60px rgba(6,182,212,0.40), 0 1px 0 rgba(255,255,255,0.07) inset;
   }
 
-  /* ── EMERALD: verde menta + lima (Stock Total) ── */
+  /* ── EMERALD: verde menta + lima ── */
   .aurora-card-kpi.aurora-kpi-emerald .aurora-card-inner {
-    background:
-      radial-gradient(ellipse 90% 90% at 15% 10%, #6ee7b7 0%, transparent 60%),
-      radial-gradient(ellipse 80% 80% at 85% 85%, #bef264 0%, transparent 60%),
-      radial-gradient(ellipse 60% 60% at 75% 15%, #a7f3d0 0%, transparent 55%),
-      #d1fae5;
-    box-shadow: 0 20px 60px rgba(52,211,153,0.30), 0 1px 0 rgba(255,255,255,0.9) inset;
+    background: linear-gradient(225deg, #6ee7b7 0%, #a7f3d0 25%, #d1fae5 55%, #f0fdf4 80%, #f7fee7 100%);
+    box-shadow: 0 20px 60px rgba(52,211,153,0.28), 0 1px 0 rgba(255,255,255,0.9) inset;
   }
   .dark .aurora-card-kpi.aurora-kpi-emerald .aurora-card-inner {
-    background:
-      radial-gradient(ellipse 90% 90% at 15% 10%, #047857 0%, transparent 60%),
-      radial-gradient(ellipse 80% 80% at 85% 85%, #65a30d 0%, transparent 60%),
-      radial-gradient(ellipse 60% 60% at 75% 15%, #064e3b 0%, transparent 55%),
-      #061a10;
-    box-shadow: 0 20px 60px rgba(16,185,129,0.35), 0 1px 0 rgba(255,255,255,0.08) inset;
+    background: linear-gradient(225deg, #047857 0%, #065f46 20%, #064e3b 55%, #14532d 85%, #052e16 100%);
+    box-shadow: 0 20px 60px rgba(16,185,129,0.40), 0 1px 0 rgba(255,255,255,0.07) inset;
   }
 
-  /* ── VIOLET: rosa + morado (exacto como la imagen) ── */
+  /* ── VIOLET: morado + rosa (exacto de la img) ── */
   .aurora-card-kpi.aurora-kpi-violet .aurora-card-inner {
-    background:
-      radial-gradient(ellipse 90% 90% at 20% 15%, #fda4af 0%, transparent 55%),
-      radial-gradient(ellipse 85% 85% at 85% 80%, #c084fc 0%, transparent 55%),
-      radial-gradient(ellipse 70% 60% at 75% 15%, #f9a8d4 0%, transparent 50%),
-      radial-gradient(ellipse 60% 60% at 10% 85%, #fb923c 0%, transparent 50%),
-      #fce7f3;
+    background: linear-gradient(225deg, #c084fc 0%, #e879f9 15%, #f9a8d4 35%, #fda4af 60%, #fed7aa 85%, #fff7ed 100%);
     box-shadow: 0 20px 60px rgba(192,132,252,0.30), 0 1px 0 rgba(255,255,255,0.9) inset;
   }
   .dark .aurora-card-kpi.aurora-kpi-violet .aurora-card-inner {
-    background:
-      radial-gradient(ellipse 90% 90% at 20% 15%, #be185d 0%, transparent 55%),
-      radial-gradient(ellipse 85% 85% at 85% 80%, #7c3aed 0%, transparent 55%),
-      radial-gradient(ellipse 70% 60% at 75% 15%, #9d174d 0%, transparent 50%),
-      radial-gradient(ellipse 60% 60% at 10% 85%, #c2410c 0%, transparent 50%),
-      #1a0520;
-    box-shadow: 0 20px 60px rgba(139,92,246,0.40), 0 1px 0 rgba(255,255,255,0.08) inset;
+    background: linear-gradient(225deg, #7c3aed 0%, #a21caf 20%, #be185d 45%, #9f1239 75%, #431407 100%);
+    box-shadow: 0 20px 60px rgba(139,92,246,0.45), 0 1px 0 rgba(255,255,255,0.07) inset;
   }
 
-  /* ── AMBER: amarillo solar + naranja (Stock Crítico) ── */
+  /* ── AMBER: amarillo + naranja ── */
   .aurora-card-kpi.aurora-kpi-amber .aurora-card-inner {
-    background:
-      radial-gradient(ellipse 90% 90% at 15% 10%, #fde68a 0%, transparent 55%),
-      radial-gradient(ellipse 85% 85% at 85% 85%, #fb923c 0%, transparent 55%),
-      radial-gradient(ellipse 70% 60% at 80% 10%, #fcd34d 0%, transparent 50%),
-      radial-gradient(ellipse 60% 60% at 5% 85%, #f97316 0%, transparent 50%),
-      #fef9c3;
-    box-shadow: 0 20px 60px rgba(245,158,11,0.30), 0 1px 0 rgba(255,255,255,0.9) inset;
+    background: linear-gradient(225deg, #fcd34d 0%, #fde68a 25%, #fef9c3 55%, #fff7ed 80%, #fffbeb 100%);
+    box-shadow: 0 20px 60px rgba(245,158,11,0.28), 0 1px 0 rgba(255,255,255,0.9) inset;
   }
   .dark .aurora-card-kpi.aurora-kpi-amber .aurora-card-inner {
-    background:
-      radial-gradient(ellipse 90% 90% at 15% 10%, #b45309 0%, transparent 55%),
-      radial-gradient(ellipse 85% 85% at 85% 85%, #c2410c 0%, transparent 55%),
-      radial-gradient(ellipse 70% 60% at 80% 10%, #92400e 0%, transparent 50%),
-      radial-gradient(ellipse 60% 60% at 5% 85%, #7c2d12 0%, transparent 50%),
-      #1a0a00;
-    box-shadow: 0 20px 60px rgba(234,179,8,0.40), 0 1px 0 rgba(255,255,255,0.08) inset;
+    background: linear-gradient(225deg, #b45309 0%, #92400e 25%, #78350f 55%, #451a03 85%, #1c0a00 100%);
+    box-shadow: 0 20px 60px rgba(234,179,8,0.40), 0 1px 0 rgba(255,255,255,0.07) inset;
   }
 
-  /* ── ROSE — versión alternativa (para cuando hay alertas) ── */
+  /* ── ROSE ── */
   .aurora-card-kpi.aurora-kpi-rose .aurora-card-inner {
-    background:
-      radial-gradient(ellipse 90% 90% at 15% 10%, #fca5a5 0%, transparent 55%),
-      radial-gradient(ellipse 85% 85% at 85% 85%, #f472b6 0%, transparent 55%),
-      radial-gradient(ellipse 70% 60% at 80% 10%, #fb7185 0%, transparent 50%),
-      #ffe4e6;
-    box-shadow: 0 20px 60px rgba(244,63,94,0.30), 0 1px 0 rgba(255,255,255,0.9) inset;
+    background: linear-gradient(225deg, #fb7185 0%, #fda4af 25%, #fecdd3 55%, #fff1f2 85%, #fff5f5 100%);
+    box-shadow: 0 20px 60px rgba(244,63,94,0.28), 0 1px 0 rgba(255,255,255,0.9) inset;
   }
   .dark .aurora-card-kpi.aurora-kpi-rose .aurora-card-inner {
-    background:
-      radial-gradient(ellipse 90% 90% at 15% 10%, #9f1239 0%, transparent 55%),
-      radial-gradient(ellipse 85% 85% at 85% 85%, #9d174d 0%, transparent 55%),
-      radial-gradient(ellipse 70% 60% at 80% 10%, #881337 0%, transparent 50%),
-      #1a0208;
-    box-shadow: 0 20px 60px rgba(244,63,94,0.40), 0 1px 0 rgba(255,255,255,0.08) inset;
+    background: linear-gradient(225deg, #9f1239 0%, #881337 25%, #4c0519 60%, #2d0a10 85%, #150206 100%);
+    box-shadow: 0 20px 60px rgba(244,63,94,0.40), 0 1px 0 rgba(255,255,255,0.07) inset;
   }
 
   /* ── BLUE ── */
   .aurora-card-kpi.aurora-kpi-blue .aurora-card-inner {
-    background:
-      radial-gradient(ellipse 90% 90% at 15% 10%, #93c5fd 0%, transparent 55%),
-      radial-gradient(ellipse 85% 85% at 85% 85%, #818cf8 0%, transparent 55%),
-      radial-gradient(ellipse 70% 60% at 80% 10%, #bfdbfe 0%, transparent 50%),
-      #eff6ff;
+    background: linear-gradient(225deg, #818cf8 0%, #93c5fd 25%, #bfdbfe 55%, #eff6ff 85%, #f8faff 100%);
     box-shadow: 0 20px 60px rgba(59,130,246,0.28), 0 1px 0 rgba(255,255,255,0.9) inset;
   }
   .dark .aurora-card-kpi.aurora-kpi-blue .aurora-card-inner {
-    background:
-      radial-gradient(ellipse 90% 90% at 15% 10%, #1d4ed8 0%, transparent 55%),
-      radial-gradient(ellipse 85% 85% at 85% 85%, #4338ca 0%, transparent 55%),
-      radial-gradient(ellipse 70% 60% at 80% 10%, #1e3a8a 0%, transparent 50%),
-      #060b1e;
-    box-shadow: 0 20px 60px rgba(59,130,246,0.40), 0 1px 0 rgba(255,255,255,0.08) inset;
+    background: linear-gradient(225deg, #4338ca 0%, #1d4ed8 25%, #1e3a8a 55%, #0f1e4a 85%, #060b1e 100%);
+    box-shadow: 0 20px 60px rgba(59,130,246,0.40), 0 1px 0 rgba(255,255,255,0.07) inset;
   }
 
   /* ── Textos sobre el gradiente de color ── */
