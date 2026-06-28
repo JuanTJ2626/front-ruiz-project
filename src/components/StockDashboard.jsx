@@ -15,6 +15,7 @@ import { toast } from 'sonner'
 import { cn } from '#/lib/utils'
 import { registrarMovimiento, getMovimientosNegocio } from '../services/movimientoService'
 import { getNegocioId, getUsuarioId } from '../services/config'
+import { useRol } from '../hooks/useRol'
 
 const TIPO_CONFIG = {
   ENTRADA: { label: 'Entrada', icon: ArrowDownCircle, color: 'text-emerald-400', bg: 'border-emerald-500/30 bg-emerald-500/10' },
@@ -57,6 +58,7 @@ const MovimientoRow = ({ mov, index }) => {
 }
 
 const StockDashboard = ({ productos = [] }) => {
+  const { isAdmin } = useRol()
   const [movimientos, setMovimientos] = useState([])
   const [loadingMovs, setLoadingMovs] = useState(true)
   const [search, setSearch] = useState('')

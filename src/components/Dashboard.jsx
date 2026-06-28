@@ -109,6 +109,7 @@ const Dashboard = ({ productos }) => {
   const totalStock = dashData ? null : productos.reduce((s, p) => s + (p.stock || 0), 0)
   const totalValue = dashData?.valorTotalInventario ?? productos.reduce((s, p) => s + ((p.precio || 0) * (p.stock || 0)), 0)
   const lowStockCount = dashData?.productosStockCritico ?? productos.filter(p => p.stock <= 5).length
+  const pedidosPendientes = dashData?.pedidosPendientes ?? 0
   const recentMovimientos = dashData?.ultimosMovimientos ?? []
   const productosBajoStock = dashData?.productosBajoStock ?? productos.filter(p => p.stock <= 5)
 

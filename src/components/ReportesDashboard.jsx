@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { motion } from 'motion/react'
 import {
   BarChart3, FileDown, FileSpreadsheet, Package, DollarSign,
-  TrendingUp, Archive, AlertTriangle, Download
+  TrendingUp, Archive, AlertTriangle, Download, FileText
 } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -13,7 +13,6 @@ import { AuroraCard, AuroraStatCard } from './ui/aurora-card'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { toast } from 'sonner'
-import { API_BASE_URL } from '#/services/config'
 
 const CHART_COLORS = ['#06b6d4', '#10b981', '#8b5cf6', '#f59e0b', '#ec4899', '#3b82f6']
 
@@ -87,13 +86,13 @@ const ReportesDashboard = ({ productos = [] }) => {
   }, [stats.totalValue])
 
   const handleExport = async (format) => {
-    const { exportarCSV, exportarPDF } = await import('../services/dashboardService')
+    const { exportarCSV, exportarPDF, exportarExcel } = await import('../services/dashboardService')
     try {
-      if (format === 'pdf') exportarPDF()
-      else exportarCSV()
-      toast.success(`Descargando reporte ${format.toUpperCase()}...`)
-    } catch {
-      toast.error(`Error al descargar el reporte ${format.toUpperCase()}`)
+      if (format === 'pdf')   { exportarPDF();   toast.success('Descargando PDF...') }
+      else if (format === 'excel') { exportarExcel(); toast.success('Descargando Excel...') }
+      else                    { exportarCSV();   toast.success('Descargando CSV...') }
+    } catch (err) {
+      toast.error(err.message || `Error al descargar ${format.toUpperCase()}`)
     }
   }
 

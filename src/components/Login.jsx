@@ -1,35 +1,30 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Sphere, MeshDistortMaterial } from '@react-three/drei';
-import { loginUser, registerUser } from '../services/authService';
+import { loginUser, registerUser, setAuthData } from '../services/authService';
 import { toast } from 'sonner';
 import { cn } from '../lib/utils';
 
+/* ── Siempre modo claro en login ─────────────────────────── */
+const ensureLightMode = () => document.documentElement.classList.remove('dark');
+
+/* ── Esfera 3D animada (diseño original) ─────────────────── */
 const AnimatedShape = ({ color, distort, speed, position, scale }) => {
   const meshRef = useRef();
-
-  useFrame((state) => {
-    const t = state.clock.getElapsedTime();
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
     if (meshRef.current) {
       meshRef.current.rotation.y = Math.sin(t / 4) / 2;
       meshRef.current.rotation.z = t / 5;
-      meshRef.current.position.y = Math.sin(t / 2) * 0.5;
+      meshRef.current.position.y = position[1] + Math.sin(t / 2) * 0.5;
     }
   });
-
   return (
     <group position={position} scale={scale}>
       <Sphere ref={meshRef} args={[1.5, 64, 64]}>
-        <MeshDistortMaterial
-          color={color}
-          attach="material"
-          distort={distort}
-          speed={speed}
-          roughness={0.2}
-          metalness={0.8}
-        />
+        <MeshDistortMaterial color={color} distort={distort} speed={speed} roughness={0.2} metalness={0.8} />
       </Sphere>
     </group>
   );
@@ -48,43 +43,62 @@ const Background3D = () => (
   </div>
 );
 
+/* ── Login principal ─────────────────────────────────────── */
 const Login = ({ onLogin }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername]   = useState('');
+  const [email, setEmail]         = useState('');
+  const [password, setPassword]   = useState('');
   const [isHovered, setIsHovered] = useState(false);
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [isRegistering, setIsReg] = useState(false);
+  const [loading, setLoading]     = useState(false);
 
   const containerRef = useRef(null);
-  const cardRef = useRef(null);
+  const cardRef      = useRef(null);
+
+  useEffect(() => { ensureLightMode(); }, []);
 
   useGSAP(() => {
     const tl = gsap.timeline();
-    tl.fromTo(containerRef.current, { opacity: 0 }, { opacity: 1, duration: 1, ease: 'power2.out' });
-    tl.fromTo(cardRef.current, { y: 50, opacity: 0, scale: 0.95 }, { y: 0, opacity: 1, scale: 1, duration: 0.8, ease: 'back.out(1.5)' }, '-=0.5');
-    const elementsToStagger = cardRef.current.querySelectorAll('.gsap-stagger');
-    tl.fromTo(elementsToStagger, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, stagger: 0.1, ease: 'power2.out' }, '-=0.4');
+    tl.fromTo(containerRef.current,
+      { opacity: 0 },
+      { opacity: 1, duration: 1, ease: 'power2.out' }
+    );
+    tl.fromTo(cardRef.current,
+      { y: 50, opacity: 0, scale: 0.95 },
+      { y: 0, opacity: 1, scale: 1, duration: 0.8, ease: 'back.out(1.5)' },
+      '-=0.5'
+    );
+    tl.fromTo(cardRef.current.querySelectorAll('.gsap-stagger'),
+      { y: 20, opacity: 0 },
+      { y: 0, opacity: 1, duration: 0.6, stagger: 0.1, ease: 'power2.out' },
+      '-=0.4'
+    );
   }, { scope: containerRef });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (email && password) {
-      setLoading(true);
-      try {
-        if (isRegistering) {
-          await registerUser({ username: email, password, email });
-          toast.success('Registro exitoso. Ahora puedes iniciar sesión.');
-          setIsRegistering(false);
-        } else {
-          await loginUser({ username: email, password });
+    if (!username || !password) return;
+    setLoading(true);
+    try {
+      if (isRegistering) {
+        const data = await registerUser({ username, password, email });
+        if (data?.token) {
+          setAuthData(data);
+          toast.success('¡Cuenta creada! Bienvenido.');
+          onLogin();
+        }
+      } else {
+        const data = await loginUser({ username, password });
+        if (data?.token) {
+          setAuthData(data);
           toast.success('Sesión iniciada correctamente');
           onLogin();
         }
-      } catch (err) {
-        toast.error(err.message || 'Error de autenticación');
-      } finally {
-        setLoading(false);
       }
+    } catch (err) {
+      toast.error(err.message || 'Error de autenticación');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -96,6 +110,7 @@ const Login = ({ onLogin }) => {
       <Background3D />
 
       <div ref={cardRef} className="login-card mx-auto shrink-0">
+        {/* Logo */}
         <div className="gsap-stagger mb-6 flex items-center justify-center opacity-90 drop-shadow-[0_4px_6px_rgba(0,0,0,0.05)]">
           <span className="font-heading text-[1.1rem] font-bold tracking-[0.15em] whitespace-nowrap bg-gradient-to-br from-teal-600 to-cyan-500 bg-clip-text text-transparent">
             INVENTARIO
@@ -110,64 +125,78 @@ const Login = ({ onLogin }) => {
         </p>
 
         <form onSubmit={handleSubmit} className="flex w-full flex-col gap-5">
+          {/* Usuario */}
           <div className="gsap-stagger relative w-full">
             <input
-              type="email"
+              type="text"
               className="login-input"
               placeholder=" "
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={username}
+              onChange={e => setUsername(e.target.value)}
               required
+              autoComplete="username"
             />
-            <label className="login-label">Correo electrónico</label>
+            <label className="login-label">Usuario</label>
           </div>
 
+          {/* Email — solo registro */}
+          {isRegistering && (
+            <div className="gsap-stagger relative w-full">
+              <input
+                type="email"
+                className="login-input"
+                placeholder=" "
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+              />
+              <label className="login-label">Correo electrónico</label>
+            </div>
+          )}
+
+          {/* Contraseña */}
           <div className="gsap-stagger relative w-full">
             <input
               type="password"
               className="login-input"
               placeholder=" "
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={e => setPassword(e.target.value)}
               required
+              autoComplete={isRegistering ? 'new-password' : 'current-password'}
             />
             <label className="login-label">Contraseña</label>
           </div>
 
-          <div className="gsap-stagger mt-2 mb-2 flex items-center justify-between gap-3 text-sm">
-            <label className="flex shrink-0 cursor-pointer items-center gap-2 text-slate-500 select-none">
-              <input type="checkbox" className="login-checkbox" />
-              <span>Recordarme</span>
-            </label>
-            <a href="#" className="shrink-0 text-blue-500 no-underline transition-colors duration-200 hover:text-blue-600 hover:underline">
-              ¿Olvidaste tu contraseña?
-            </a>
-          </div>
+          {!isRegistering && (
+            <div className="gsap-stagger mt-2 mb-2 flex items-center justify-between gap-3 text-sm">
+              <label className="flex shrink-0 cursor-pointer items-center gap-2 text-slate-500 select-none">
+                <input type="checkbox" className="login-checkbox" />
+                <span>Recordarme</span>
+              </label>
+              <a href="#" className="shrink-0 text-blue-500 no-underline transition-colors hover:text-blue-600 hover:underline">
+                ¿Olvidaste tu contraseña?
+              </a>
+            </div>
+          )}
 
           <button
             type="submit"
+            disabled={loading}
             className={cn(
-              'gsap-stagger group mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-0 bg-slate-900 py-4 text-base font-semibold text-white shadow-[0_4px_14px_rgba(15,23,42,0.2)] transition-all duration-300 ease-[cubic-bezier(0.25,0.8,0.25,1)] hover:bg-slate-800 hover:shadow-[0_6px_20px_rgba(15,23,42,0.3)]',
+              'gsap-stagger group mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-0 bg-slate-900 py-4 text-base font-semibold text-white shadow-[0_4px_14px_rgba(15,23,42,0.2)] transition-all duration-300 hover:bg-slate-800 hover:shadow-[0_6px_20px_rgba(15,23,42,0.3)]',
               loading && 'cursor-not-allowed opacity-70'
             )}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            disabled={loading}
-            style={{
-              transform: isHovered && !loading ? 'scale(1.02)' : 'scale(1)',
-            }}
+            style={{ transform: isHovered && !loading ? 'scale(1.02)' : 'scale(1)' }}
           >
-            {loading ? 'Procesando...' : 'Continuar'}
+            {loading ? 'Procesando...' : isRegistering ? 'Crear cuenta' : 'Continuar'}
             <svg
               className="transition-transform duration-300 group-hover:translate-x-1"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+              width="20" height="20" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
             >
               <path d="M5 12h14M12 5l7 7-7 7" />
             </svg>
@@ -179,11 +208,8 @@ const Login = ({ onLogin }) => {
             {isRegistering ? '¿Ya tienes una cuenta?' : '¿No tienes una cuenta?'}{' '}
             <a
               href="#"
-              className="text-blue-500 no-underline transition-colors duration-200 hover:text-blue-600 hover:underline"
-              onClick={(e) => {
-                e.preventDefault();
-                setIsRegistering(!isRegistering);
-              }}
+              className="text-blue-500 no-underline transition-colors hover:text-blue-600 hover:underline"
+              onClick={e => { e.preventDefault(); setIsReg(v => !v); setUsername(''); setEmail(''); setPassword(''); }}
             >
               {isRegistering ? 'Inicia sesión' : 'Crea una ahora'}
             </a>

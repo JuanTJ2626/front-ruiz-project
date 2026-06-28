@@ -23,7 +23,8 @@ import { Card, CardContent } from './components/ui/card';
 import { AuroraStatCard } from './components/ui/aurora-card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './components/ui/table';
 import { Skeleton } from './components/ui/skeleton';
-import { Pencil, Trash2, Package, Archive, Search, Plus, DollarSign, LayoutGrid, List, AlertTriangle, X, Check, Loader2 } from 'lucide-react';
+import { Pencil, Trash2, Package, Archive, Search, Plus, DollarSign, LayoutGrid, List, AlertTriangle, X, Check, Loader2, ImagePlus } from 'lucide-react';
+import { subirImagenProducto } from './services/uploadService';
 
 /* ── Página Productos ─────────────────────────────────────── */
 function ProductosPage({ productos, loading, stats, filteredProducts, searchQuery, setSearchQuery, viewMode, setViewMode, onAdd, onEdit, onDelete }) {
@@ -98,6 +99,12 @@ function ProductosPage({ productos, loading, stats, filteredProducts, searchQuer
                   >
                     <Card className="h-full border-muted/50 shadow-sm hover:shadow-md transition-all hover:-translate-y-1 overflow-hidden">
                       <CardContent className="p-5 flex flex-col h-full">
+                        {/* Imagen si existe */}
+                        {prod.imagenUrl && (
+                          <div className="mb-3 -mx-5 -mt-5 h-36 overflow-hidden">
+                            <img src={prod.imagenUrl} alt={prod.nombre} className="h-full w-full object-cover" />
+                          </div>
+                        )}
                         <div className="flex justify-between items-start gap-4 mb-3">
                           <div className="flex-1 min-w-0">
                             <h3 className="font-bold text-foreground truncate text-base">{prod.nombre}</h3>
@@ -171,7 +178,8 @@ function App() {
   const [viewMode, setViewMode] = useState('grid');
   const [showForm, setShowForm] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const [formData, setFormData] = useState({ nombre: '', descripcion: '', precio: '', stock: '' });
+  const [formData, setFormData] = useState({ nombre: '', descripcion: '', precio: '', stock: '', imagenUrl: '' });
+  const [uploadingImg, setUploadingImg] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const mainRef = useRef(null);
   const location = useLocation();
@@ -186,7 +194,9 @@ function App() {
     }
   }, [isAuthenticated, location.pathname]);
 
-  useEffect(() => { cargarProductos(); }, []);
+  useEffect(() => {
+    if (isAuthenticated) cargarProductos();
+  }, [isAuthenticated]);
 
   const cargarProductos = async () => {
     try {
@@ -225,7 +235,7 @@ function App() {
   };
 
   const handleEdit = (p) => {
-    setFormData({ nombre: p.nombre, descripcion: p.descripcion || '', precio: p.precio, stock: p.stock });
+    setFormData({ nombre: p.nombre, descripcion: p.descripcion || '', precio: p.precio, stock: p.stock, imagenUrl: p.imagenUrl || '' });
     setEditingId(p.id); setShowForm(true);
   };
 
@@ -238,7 +248,7 @@ function App() {
 
   const cancelForm = () => {
     setEditingId(null);
-    setFormData({ nombre: '', descripcion: '', precio: '', stock: '' });
+    setFormData({ nombre: '', descripcion: '', precio: '', stock: '', imagenUrl: '' });
     setShowForm(false);
   };
 
@@ -285,6 +295,41 @@ function App() {
             <div className="space-y-2">
               <Label htmlFor="sh-desc" className="text-sm font-semibold">Descripción</Label>
               <Textarea id="sh-desc" name="descripcion" value={formData.descripcion} onChange={handleInputChange} rows={4} className="resize-none rounded-xl" placeholder="Detalles y características..." />
+            </div>
+            {/* Imagen del producto */}
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Imagen del producto</Label>
+              <div className="flex items-center gap-3">
+                {formData.imagenUrl && (
+                  <img src={formData.imagenUrl} alt="producto" className="h-14 w-14 rounded-xl object-cover border border-muted/50" />
+                )}
+                <label className={`flex cursor-pointer items-center gap-2 rounded-xl border border-muted/50 bg-muted/10 px-4 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted/20 ${uploadingImg ? 'opacity-60 cursor-not-allowed' : ''}`}>
+                  {uploadingImg ? <Loader2 size={15} className="animate-spin" /> : <ImagePlus size={15} />}
+                  {uploadingImg ? 'Subiendo...' : formData.imagenUrl ? 'Cambiar imagen' : 'Subir imagen'}
+                  <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden"
+                    disabled={uploadingImg}
+                    onChange={async (e) => {
+                      const archivo = e.target.files?.[0];
+                      if (!archivo) return;
+                      if (archivo.size > 5 * 1024 * 1024) { toast.error('La imagen no puede superar 5MB'); return; }
+                      setUploadingImg(true);
+                      try {
+                        const { url } = await subirImagenProducto(archivo);
+                        setFormData(f => ({ ...f, imagenUrl: url }));
+                        toast.success('Imagen subida correctamente');
+                      } catch (err) { toast.error(err.message || 'Error al subir imagen'); }
+                      finally { setUploadingImg(false); }
+                    }}
+                  />
+                </label>
+                {formData.imagenUrl && (
+                  <button type="button" onClick={() => setFormData(f => ({...f, imagenUrl: ''}))}
+                    className="text-xs text-muted-foreground hover:text-destructive transition-colors">
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+              <p className="text-[11px] text-muted-foreground">JPG, PNG, GIF o WebP · Máx 5MB</p>
             </div>
             <div className="grid grid-cols-2 gap-5">
               <div className="space-y-2">

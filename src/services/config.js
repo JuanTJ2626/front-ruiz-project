@@ -31,8 +31,16 @@ export const fetchApi = async (endpoint, options = {}) => {
   const response = await fetch(url, options);
 
   if (!response.ok) {
+    // 403 — sin permisos (rol EMPLEADO intentando acción de ADMIN)
+    if (response.status === 403) {
+      throw new Error('No tienes permiso para realizar esta acción');
+    }
+    // 401 — token vencido o sin token
+    if (response.status === 401) {
+      throw new Error('Sesión expirada. Vuelve a iniciar sesión');
+    }
     let errorData;
-    try { errorData = await response.json(); } 
+    try { errorData = await response.json(); }
     catch { errorData = { mensaje: 'Error en el servidor' }; }
     throw new Error(errorData.mensaje || errorData.message || `Error ${response.status}`);
   }

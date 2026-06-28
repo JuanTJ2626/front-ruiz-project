@@ -8,36 +8,37 @@ export const getDashboard = () => {
   return fetchApi(`/dashboard/negocio/${negocioId}`);
 };
 
-/** Descargar reporte CSV */
-export const exportarCSV = () => {
-  const negocioId = getNegocioId();
+/** Helper interno para descargas con token */
+const descargarArchivo = (url, filename) => {
   const token = getToken();
-  const url = `${API_BASE_URL}/dashboard/negocio/${negocioId}/exportar/csv`;
-  const a = document.createElement('a');
-  a.href = url;
-  a.setAttribute('Authorization', `Bearer ${token}`);
-  // Mejor con fetch para incluir el header del token:
   fetch(url, { headers: { Authorization: `Bearer ${token}` } })
-    .then(r => r.blob())
+    .then(r => {
+      if (!r.ok) throw new Error('No tienes permiso para descargar este archivo');
+      return r.blob();
+    })
     .then(blob => {
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = 'inventario.csv';
+      link.download = filename;
       link.click();
+      URL.revokeObjectURL(link.href);
     });
+};
+
+/** Descargar reporte CSV */
+export const exportarCSV = () => {
+  const negocioId = getNegocioId();
+  descargarArchivo(`${API_BASE_URL}/dashboard/negocio/${negocioId}/exportar/csv`, 'inventario.csv');
 };
 
 /** Descargar reporte PDF */
 export const exportarPDF = () => {
   const negocioId = getNegocioId();
-  const token = getToken();
-  const url = `${API_BASE_URL}/dashboard/negocio/${negocioId}/exportar/pdf`;
-  fetch(url, { headers: { Authorization: `Bearer ${token}` } })
-    .then(r => r.blob())
-    .then(blob => {
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = 'inventario.pdf';
-      link.click();
-    });
+  descargarArchivo(`${API_BASE_URL}/dashboard/negocio/${negocioId}/exportar/pdf`, 'inventario.pdf');
+};
+
+/** Descargar reporte Excel (.xlsx) */
+export const exportarExcel = () => {
+  const negocioId = getNegocioId();
+  descargarArchivo(`${API_BASE_URL}/dashboard/negocio/${negocioId}/exportar/excel`, 'inventario.xlsx');
 };
