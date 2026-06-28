@@ -1,4 +1,6 @@
 import { cn } from "#/lib/utils"
+import { useRef, useEffect, useState } from "react"
+import { useInView, useMotionValue, useSpring } from "motion/react"
 
 const glowMap = {
   cyan: "aurora-glow-cyan",
@@ -9,11 +11,37 @@ const glowMap = {
   blue: "aurora-glow-blue",
 }
 
+/* Contador animado interno */
+function AnimatedNumber({ value, prefix = '', suffix = '', decimals = 0 }) {
+  const ref = useRef(null)
+  const inView = useInView(ref, { once: true, margin: '-40px' })
+  const motionVal = useMotionValue(0)
+  const spring = useSpring(motionVal, { stiffness: 55, damping: 16, mass: 0.9 })
+  const [display, setDisplay] = useState('0')
+
+  useEffect(() => {
+    if (!inView) return
+    motionVal.set(value)
+  }, [inView, value, motionVal])
+
+  useEffect(() => {
+    return spring.on('change', (v) => {
+      const formatted = decimals > 0
+        ? v.toLocaleString('es-MX', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
+        : Math.round(v).toLocaleString('es-MX')
+      setDisplay(formatted)
+    })
+  }, [spring, decimals])
+
+  return <span ref={ref}>{prefix}{display}{suffix}</span>
+}
+
 export function AuroraCard({
   children,
   className,
   glow = "cyan",
   featured = false,
+  kpi = false,
   ...props
 }) {
   return (
@@ -21,6 +49,8 @@ export function AuroraCard({
       className={cn(
         "aurora-card group relative",
         featured && "aurora-card-featured",
+        kpi && "aurora-card-kpi",
+        kpi && `aurora-kpi-${glow}`,
         className
       )}
       {...props}
@@ -36,39 +66,54 @@ export function AuroraStatCard({
   icon: Icon,
   label,
   value,
+  prefix = '',
+  decimals = 0,
   sub,
   glow = "cyan",
   delay = 0,
   trend,
   className,
 }) {
+  const numericValue = typeof value === 'number' ? value : parseFloat(String(value).replace(/[^0-9.]/g, '')) || 0
+
   return (
     <div
       className={cn("aurora-stat-enter", className)}
       style={{ animationDelay: `${delay}ms` }}
     >
-      <AuroraCard glow={glow} className="h-full transition-transform duration-500 hover:-translate-y-1">
+      <AuroraCard kpi glow={glow} className="h-full transition-all duration-500 hover:-translate-y-2 hover:scale-[1.02]"
+        style={{ filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.12))' }}
+      >
         <div className="flex h-full flex-col justify-between p-6">
-          <div className="mb-5 flex items-start justify-between">
-            <div className="aurora-icon-ring flex h-12 w-12 items-center justify-center rounded-2xl">
-              <Icon size={22} strokeWidth={1.75} />
-            </div>
-            {trend && (
-              <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-400">
-                {trend}
-              </span>
-            )}
-          </div>
-          <div>
-            <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          {/* Top row: label + icon */}
+          <div className="flex items-start justify-between">
+            <p className="aurora-kpi-label text-xs font-semibold uppercase tracking-widest">
               {label}
             </p>
-            <p className="font-heading text-3xl font-bold tracking-tight text-foreground">
-              {value}
+            <div className="aurora-kpi-icon flex h-10 w-10 items-center justify-center rounded-2xl">
+              <Icon size={19} strokeWidth={1.75} />
+            </div>
+          </div>
+
+          {/* Big number */}
+          <div className="my-4">
+            <p className="aurora-kpi-value font-heading font-bold tracking-tight tabular-nums leading-none">
+              <AnimatedNumber value={numericValue} prefix={prefix} decimals={decimals} />
             </p>
             {sub && (
-              <p className="mt-1.5 text-sm text-muted-foreground">{sub}</p>
+              <p className="aurora-kpi-sub mt-2">{sub}</p>
             )}
+          </div>
+
+          {/* Bottom pill — estilo Apple "Start Free" */}
+          <div className="flex items-center justify-between gap-2">
+            <div className={cn(
+              'flex-1 rounded-2xl px-4 py-2.5 text-center text-sm font-bold',
+              'bg-black/15 text-black/70 dark:bg-white/12 dark:text-white/80',
+              'backdrop-blur-md border border-black/8 dark:border-white/10'
+            )}>
+              {trend ?? 'Ver detalle'}
+            </div>
           </div>
         </div>
       </AuroraCard>

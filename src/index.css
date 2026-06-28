@@ -254,131 +254,88 @@
   /* ── Aurora Dashboard ── */
   .dashboard-aurora-bg {
     background:
-      radial-gradient(ellipse 90% 60% at 0% 0%, rgba(6, 182, 212, 0.08), transparent 55%),
-      radial-gradient(ellipse 70% 50% at 100% 10%, rgba(139, 92, 246, 0.07), transparent 50%),
-      radial-gradient(ellipse 60% 40% at 50% 100%, rgba(16, 185, 129, 0.06), transparent 50%),
+      radial-gradient(ellipse 80% 55% at 5% 5%, rgba(120, 80, 255, 0.07), transparent 55%),
+      radial-gradient(ellipse 60% 45% at 95% 10%, rgba(255, 140, 60, 0.06), transparent 50%),
+      radial-gradient(ellipse 55% 40% at 45% 95%, rgba(60, 160, 255, 0.05), transparent 50%),
       var(--background);
   }
 
   .dark .dashboard-aurora-bg {
     background:
-      radial-gradient(ellipse 90% 60% at 0% 0%, rgba(6, 182, 212, 0.12), transparent 55%),
-      radial-gradient(ellipse 70% 50% at 100% 10%, rgba(139, 92, 246, 0.1), transparent 50%),
-      radial-gradient(ellipse 60% 40% at 50% 100%, rgba(16, 185, 129, 0.08), transparent 50%),
-      oklch(0.12 0.01 260);
+      radial-gradient(ellipse 80% 55% at 5% 5%, rgba(120, 80, 255, 0.12), transparent 55%),
+      radial-gradient(ellipse 60% 45% at 95% 10%, rgba(255, 140, 60, 0.09), transparent 50%),
+      radial-gradient(ellipse 55% 40% at 45% 95%, rgba(60, 160, 255, 0.08), transparent 50%),
+      #0a0a10;
   }
 
   .aurora-orb {
     position: absolute;
     border-radius: 50%;
-    filter: blur(80px);
-    opacity: 0.5;
-    animation: aurora-float 20s ease-in-out infinite;
+    filter: blur(120px);
+    opacity: 0.4;
+    animation: aurora-float 25s ease-in-out infinite;
   }
 
   .aurora-orb-1 {
-    top: -10%;
-    left: -5%;
-    width: 500px;
-    height: 500px;
-    background: radial-gradient(circle, rgba(6, 182, 212, 0.35), transparent 70%);
+    top: -10%; left: -5%; width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(120, 80, 255, 0.5), transparent 70%);
     animation-delay: 0s;
   }
-
   .aurora-orb-2 {
-    top: 20%;
-    right: -8%;
-    width: 450px;
-    height: 450px;
-    background: radial-gradient(circle, rgba(139, 92, 246, 0.3), transparent 70%);
-    animation-delay: -7s;
+    top: 20%; right: -8%; width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(255, 120, 50, 0.4), transparent 70%);
+    animation-delay: -9s;
   }
-
   .aurora-orb-3 {
-    bottom: -5%;
-    left: 30%;
-    width: 400px;
-    height: 400px;
-    background: radial-gradient(circle, rgba(16, 185, 129, 0.25), transparent 70%);
-    animation-delay: -14s;
+    bottom: -8%; left: 25%; width: 450px; height: 450px;
+    background: radial-gradient(circle, rgba(40, 160, 255, 0.35), transparent 70%);
+    animation-delay: -17s;
   }
 
+  /* ══════════════════════════════════════════
+     AURORA CARD — fondo de color como Apple
+  ══════════════════════════════════════════ */
   .aurora-card {
     position: relative;
     border-radius: 1.25rem;
     isolation: isolate;
+    overflow: hidden;
   }
 
   .aurora-card-glow {
     position: absolute;
-    inset: -1px;
+    inset: -4px;
     border-radius: inherit;
     opacity: 0;
     transition: opacity 0.5s ease;
     z-index: 0;
+    filter: blur(18px);
   }
 
   .aurora-card:hover .aurora-card-glow,
   .aurora-card-featured .aurora-card-glow {
-    opacity: 1;
+    opacity: 0.85;
   }
 
-  .aurora-glow-cyan {
-    background: linear-gradient(135deg, rgba(6, 182, 212, 0.4), rgba(16, 185, 129, 0.2), rgba(6, 182, 212, 0.3));
-    filter: blur(12px);
-    animation: aurora-pulse 4s ease-in-out infinite;
-  }
-
-  .aurora-glow-emerald {
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.4), rgba(6, 182, 212, 0.2), rgba(52, 211, 153, 0.3));
-    filter: blur(12px);
-    animation: aurora-pulse 4s ease-in-out infinite 0.5s;
-  }
-
-  .aurora-glow-violet {
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.4), rgba(236, 72, 153, 0.2), rgba(99, 102, 241, 0.3));
-    filter: blur(12px);
-    animation: aurora-pulse 4s ease-in-out infinite 1s;
-  }
-
-  .aurora-glow-amber {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.4), rgba(239, 68, 68, 0.2), rgba(251, 191, 36, 0.3));
-    filter: blur(12px);
-    animation: aurora-pulse 4s ease-in-out infinite 1.5s;
-  }
-
-  .aurora-glow-rose {
-    background: linear-gradient(135deg, rgba(236, 72, 153, 0.4), rgba(239, 68, 68, 0.2), rgba(244, 114, 182, 0.3));
-    filter: blur(12px);
-    animation: aurora-pulse 4s ease-in-out infinite 2s;
-  }
-
-  .aurora-glow-blue {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.4), rgba(6, 182, 212, 0.2), rgba(99, 102, 241, 0.3));
-    filter: blur(12px);
-    animation: aurora-pulse 4s ease-in-out infinite 0.8s;
-  }
+  .aurora-glow-cyan    { background: radial-gradient(ellipse at 50% 50%, rgba(56,189,248,0.75), rgba(6,182,212,0.4), transparent 70%); }
+  .aurora-glow-emerald { background: radial-gradient(ellipse at 50% 50%, rgba(52,211,153,0.75), rgba(16,185,129,0.4), transparent 70%); }
+  .aurora-glow-violet  { background: radial-gradient(ellipse at 50% 50%, rgba(167,139,250,0.75), rgba(139,92,246,0.4), transparent 70%); }
+  .aurora-glow-amber   { background: radial-gradient(ellipse at 50% 50%, rgba(251,191,36,0.75), rgba(245,158,11,0.4), transparent 70%); }
+  .aurora-glow-rose    { background: radial-gradient(ellipse at 50% 50%, rgba(251,113,133,0.75), rgba(244,63,94,0.4), transparent 70%); }
+  .aurora-glow-blue    { background: radial-gradient(ellipse at 50% 50%, rgba(96,165,250,0.75), rgba(59,130,246,0.4), transparent 70%); }
 
   .aurora-card-border {
     position: absolute;
     inset: 0;
     border-radius: inherit;
     padding: 1px;
-    background: linear-gradient(
-      135deg,
-      rgba(6, 182, 212, 0.35),
-      rgba(139, 92, 246, 0.2),
-      rgba(16, 185, 129, 0.3),
-      rgba(6, 182, 212, 0.35)
-    );
-    background-size: 300% 300%;
-    animation: aurora-border-shift 8s ease infinite;
+    background: linear-gradient(135deg, rgba(255,255,255,0.45), rgba(255,255,255,0.08), rgba(255,255,255,0.25));
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
-    z-index: 1;
-    opacity: 0.6;
+    z-index: 3;
+    opacity: 0.7;
     transition: opacity 0.4s ease;
   }
 
@@ -387,34 +344,215 @@
     opacity: 1;
   }
 
+  /* ── Inner: fondo NEUTRO para cards normales ── */
   .aurora-card-inner {
     position: relative;
     z-index: 2;
     border-radius: calc(1.25rem - 1px);
-    background: color-mix(in oklch, var(--card) 85%, transparent);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.05) inset,
-      0 4px 24px -4px rgba(0, 0, 0, 0.12);
+    background: var(--card);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 4px 20px rgba(0,0,0,0.06);
   }
-
   .dark .aurora-card-inner {
-    background: color-mix(in oklch, var(--card) 70%, transparent);
-    box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.06) inset,
-      0 8px 32px -8px rgba(0, 0, 0, 0.5);
+    background: rgba(20, 18, 30, 0.92);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.05) inset, 0 8px 32px rgba(0,0,0,0.5);
   }
 
+  /* ══════════════════════════════════════════════════════
+     KPI CARDS — Estilo Apple / "Legendary card"
+     Fondo: gradiente suave difuso tipo blob, muy redondo
+  ══════════════════════════════════════════════════════ */
+
+  /* Override del border-radius solo para KPIs */
+  .aurora-card-kpi {
+    border-radius: 2rem !important;
+  }
+  .aurora-card-kpi .aurora-card-inner {
+    border-radius: calc(2rem - 1px) !important;
+  }
+  .aurora-card-kpi .aurora-card-border {
+    border-radius: 2rem !important;
+  }
+  .aurora-card-kpi .aurora-card-glow {
+    border-radius: 2rem !important;
+  }
+
+  /* Sin borde visible en KPIs — el gradiente es el fondo */
+  .aurora-card-kpi .aurora-card-border {
+    display: none;
+  }
+
+  /* Base KPI inner */
+  .aurora-card-kpi .aurora-card-inner {
+    box-shadow: 0 20px 60px rgba(0,0,0,0.12), 0 1px 0 rgba(255,255,255,0.8) inset;
+  }
+
+  /* ── CYAN: azul cielo + teal (Total Productos) ── */
+  .aurora-card-kpi.aurora-kpi-cyan .aurora-card-inner {
+    background:
+      radial-gradient(ellipse 90% 90% at 15% 10%, #7dd3fc 0%, transparent 60%),
+      radial-gradient(ellipse 80% 80% at 85% 85%, #34d399 0%, transparent 60%),
+      radial-gradient(ellipse 60% 60% at 80% 10%, #a5f3fc 0%, transparent 55%),
+      #bfdbfe;
+    box-shadow: 0 20px 60px rgba(56,189,248,0.30), 0 1px 0 rgba(255,255,255,0.9) inset;
+  }
+  .dark .aurora-card-kpi.aurora-kpi-cyan .aurora-card-inner {
+    background:
+      radial-gradient(ellipse 90% 90% at 15% 10%, #0891b2 0%, transparent 60%),
+      radial-gradient(ellipse 80% 80% at 85% 85%, #059669 0%, transparent 60%),
+      radial-gradient(ellipse 60% 60% at 80% 10%, #164e63 0%, transparent 55%),
+      #0c1a2e;
+    box-shadow: 0 20px 60px rgba(6,182,212,0.35), 0 1px 0 rgba(255,255,255,0.08) inset;
+  }
+
+  /* ── EMERALD: verde menta + lima (Stock Total) ── */
+  .aurora-card-kpi.aurora-kpi-emerald .aurora-card-inner {
+    background:
+      radial-gradient(ellipse 90% 90% at 15% 10%, #6ee7b7 0%, transparent 60%),
+      radial-gradient(ellipse 80% 80% at 85% 85%, #bef264 0%, transparent 60%),
+      radial-gradient(ellipse 60% 60% at 75% 15%, #a7f3d0 0%, transparent 55%),
+      #d1fae5;
+    box-shadow: 0 20px 60px rgba(52,211,153,0.30), 0 1px 0 rgba(255,255,255,0.9) inset;
+  }
+  .dark .aurora-card-kpi.aurora-kpi-emerald .aurora-card-inner {
+    background:
+      radial-gradient(ellipse 90% 90% at 15% 10%, #047857 0%, transparent 60%),
+      radial-gradient(ellipse 80% 80% at 85% 85%, #65a30d 0%, transparent 60%),
+      radial-gradient(ellipse 60% 60% at 75% 15%, #064e3b 0%, transparent 55%),
+      #061a10;
+    box-shadow: 0 20px 60px rgba(16,185,129,0.35), 0 1px 0 rgba(255,255,255,0.08) inset;
+  }
+
+  /* ── VIOLET: rosa + morado (exacto como la imagen) ── */
+  .aurora-card-kpi.aurora-kpi-violet .aurora-card-inner {
+    background:
+      radial-gradient(ellipse 90% 90% at 20% 15%, #fda4af 0%, transparent 55%),
+      radial-gradient(ellipse 85% 85% at 85% 80%, #c084fc 0%, transparent 55%),
+      radial-gradient(ellipse 70% 60% at 75% 15%, #f9a8d4 0%, transparent 50%),
+      radial-gradient(ellipse 60% 60% at 10% 85%, #fb923c 0%, transparent 50%),
+      #fce7f3;
+    box-shadow: 0 20px 60px rgba(192,132,252,0.30), 0 1px 0 rgba(255,255,255,0.9) inset;
+  }
+  .dark .aurora-card-kpi.aurora-kpi-violet .aurora-card-inner {
+    background:
+      radial-gradient(ellipse 90% 90% at 20% 15%, #be185d 0%, transparent 55%),
+      radial-gradient(ellipse 85% 85% at 85% 80%, #7c3aed 0%, transparent 55%),
+      radial-gradient(ellipse 70% 60% at 75% 15%, #9d174d 0%, transparent 50%),
+      radial-gradient(ellipse 60% 60% at 10% 85%, #c2410c 0%, transparent 50%),
+      #1a0520;
+    box-shadow: 0 20px 60px rgba(139,92,246,0.40), 0 1px 0 rgba(255,255,255,0.08) inset;
+  }
+
+  /* ── AMBER: amarillo solar + naranja (Stock Crítico) ── */
+  .aurora-card-kpi.aurora-kpi-amber .aurora-card-inner {
+    background:
+      radial-gradient(ellipse 90% 90% at 15% 10%, #fde68a 0%, transparent 55%),
+      radial-gradient(ellipse 85% 85% at 85% 85%, #fb923c 0%, transparent 55%),
+      radial-gradient(ellipse 70% 60% at 80% 10%, #fcd34d 0%, transparent 50%),
+      radial-gradient(ellipse 60% 60% at 5% 85%, #f97316 0%, transparent 50%),
+      #fef9c3;
+    box-shadow: 0 20px 60px rgba(245,158,11,0.30), 0 1px 0 rgba(255,255,255,0.9) inset;
+  }
+  .dark .aurora-card-kpi.aurora-kpi-amber .aurora-card-inner {
+    background:
+      radial-gradient(ellipse 90% 90% at 15% 10%, #b45309 0%, transparent 55%),
+      radial-gradient(ellipse 85% 85% at 85% 85%, #c2410c 0%, transparent 55%),
+      radial-gradient(ellipse 70% 60% at 80% 10%, #92400e 0%, transparent 50%),
+      radial-gradient(ellipse 60% 60% at 5% 85%, #7c2d12 0%, transparent 50%),
+      #1a0a00;
+    box-shadow: 0 20px 60px rgba(234,179,8,0.40), 0 1px 0 rgba(255,255,255,0.08) inset;
+  }
+
+  /* ── ROSE — versión alternativa (para cuando hay alertas) ── */
+  .aurora-card-kpi.aurora-kpi-rose .aurora-card-inner {
+    background:
+      radial-gradient(ellipse 90% 90% at 15% 10%, #fca5a5 0%, transparent 55%),
+      radial-gradient(ellipse 85% 85% at 85% 85%, #f472b6 0%, transparent 55%),
+      radial-gradient(ellipse 70% 60% at 80% 10%, #fb7185 0%, transparent 50%),
+      #ffe4e6;
+    box-shadow: 0 20px 60px rgba(244,63,94,0.30), 0 1px 0 rgba(255,255,255,0.9) inset;
+  }
+  .dark .aurora-card-kpi.aurora-kpi-rose .aurora-card-inner {
+    background:
+      radial-gradient(ellipse 90% 90% at 15% 10%, #9f1239 0%, transparent 55%),
+      radial-gradient(ellipse 85% 85% at 85% 85%, #9d174d 0%, transparent 55%),
+      radial-gradient(ellipse 70% 60% at 80% 10%, #881337 0%, transparent 50%),
+      #1a0208;
+    box-shadow: 0 20px 60px rgba(244,63,94,0.40), 0 1px 0 rgba(255,255,255,0.08) inset;
+  }
+
+  /* ── BLUE ── */
+  .aurora-card-kpi.aurora-kpi-blue .aurora-card-inner {
+    background:
+      radial-gradient(ellipse 90% 90% at 15% 10%, #93c5fd 0%, transparent 55%),
+      radial-gradient(ellipse 85% 85% at 85% 85%, #818cf8 0%, transparent 55%),
+      radial-gradient(ellipse 70% 60% at 80% 10%, #bfdbfe 0%, transparent 50%),
+      #eff6ff;
+    box-shadow: 0 20px 60px rgba(59,130,246,0.28), 0 1px 0 rgba(255,255,255,0.9) inset;
+  }
+  .dark .aurora-card-kpi.aurora-kpi-blue .aurora-card-inner {
+    background:
+      radial-gradient(ellipse 90% 90% at 15% 10%, #1d4ed8 0%, transparent 55%),
+      radial-gradient(ellipse 85% 85% at 85% 85%, #4338ca 0%, transparent 55%),
+      radial-gradient(ellipse 70% 60% at 80% 10%, #1e3a8a 0%, transparent 50%),
+      #060b1e;
+    box-shadow: 0 20px 60px rgba(59,130,246,0.40), 0 1px 0 rgba(255,255,255,0.08) inset;
+  }
+
+  /* ── Textos sobre el gradiente de color ── */
+  .aurora-card-kpi .aurora-kpi-label {
+    color: rgba(15, 10, 30, 0.60);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+  }
+  .aurora-card-kpi .aurora-kpi-value {
+    color: rgba(8, 5, 20, 0.90);
+    font-size: 2.8rem;
+    line-height: 1;
+  }
+  .aurora-card-kpi .aurora-kpi-sub {
+    color: rgba(15, 10, 30, 0.55);
+    font-size: 0.78rem;
+  }
+  .aurora-card-kpi .aurora-kpi-badge {
+    background: rgba(255,255,255,0.45);
+    border: 1px solid rgba(255,255,255,0.70);
+    color: rgba(8, 5, 20, 0.80);
+    backdrop-filter: blur(8px);
+  }
+  .dark .aurora-card-kpi .aurora-kpi-label { color: rgba(255,255,255,0.60); }
+  .dark .aurora-card-kpi .aurora-kpi-value { color: rgba(255,255,255,0.97); }
+  .dark .aurora-card-kpi .aurora-kpi-sub   { color: rgba(255,255,255,0.50); }
+  .dark .aurora-card-kpi .aurora-kpi-badge {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.22);
+    color: rgba(255,255,255,0.92);
+  }
+
+  /* ── Ícono — frosted glass pill ── */
+  .aurora-card-kpi .aurora-kpi-icon {
+    background: rgba(255,255,255,0.45);
+    border: 1px solid rgba(255,255,255,0.70);
+    color: rgba(8, 5, 20, 0.70);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    backdrop-filter: blur(10px);
+  }
+  .dark .aurora-card-kpi .aurora-kpi-icon {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.20);
+    color: rgba(255,255,255,0.92);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.30);
+  }
+
+  /* Icon ring para cards normales */
   .aurora-icon-ring {
-    background: linear-gradient(135deg, rgba(6, 182, 212, 0.12), rgba(16, 185, 129, 0.08));
-    border: 1px solid rgba(6, 182, 212, 0.2);
-    color: oklch(0.75 0.12 195);
-    box-shadow: 0 0 20px -5px rgba(6, 182, 212, 0.3);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--muted-foreground);
   }
-
   .dark .aurora-icon-ring {
-    color: oklch(0.82 0.1 195);
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    color: rgba(255,255,255,0.65);
   }
 
   .aurora-stat-enter {
