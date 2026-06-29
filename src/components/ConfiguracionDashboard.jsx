@@ -13,14 +13,16 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog'
 import { toast } from 'sonner'
 import { cn } from '#/lib/utils'
-import { getNegociosUsuario, actualizarNegocio } from '../services/negocioService'
+import { getNegociosUsuario, actualizarNegocio, crearNegocio } from '../services/negocioService'
 import { getUsername, getRol, getNegocioId } from '../services/config'
 import { getUsuarios, crearEmpleado, cambiarRol, cambiarEstadoUsuario, eliminarUsuario } from '../services/usuarioService'
 import { subirLogoNegocio } from '../services/uploadService'
 import { useRol } from '../hooks/useRol'
+import { useApp } from '../context/AppContext'
 
 const ConfiguracionDashboard = () => {
   const { isAdmin } = useRol()
+  const { cambiarNegocio, handleCrearNegocio, recargar } = useApp()
   const username = getUsername() || 'Usuario'
   const rol      = getRol()      || 'ADMIN'
 
@@ -29,6 +31,11 @@ const ConfiguracionDashboard = () => {
   const [negocioActivo, setNegocioAct]    = useState(Number(getNegocioId()) || null)
   const [negocioForm, setNegocioForm]     = useState({ nombre: '', giro: '', logoUrl: '' })
   const [uploadingLogo, setUploadingLogo] = useState(false)
+
+  // Crear nuevo negocio
+  const [showFormNegocio, setShowFormNegocio] = useState(false)
+  const [savingNegocio, setSavingNegocio]     = useState(false)
+  const [formNegocio, setFormNegocio]         = useState({ nombre: '', giro: '' })
 
   // Usuarios — solo ADMIN
   const [usuarios, setUsuarios]           = useState([])
@@ -67,9 +74,8 @@ const ConfiguracionDashboard = () => {
 
   const handleSeleccionarNegocio = (negocio) => {
     setNegocioAct(negocio.id)
-    localStorage.setItem('negocioId', String(negocio.id))
+    cambiarNegocio(negocio.id) // cambia el negocio activo en toda la app y recarga datos
     setNegocioForm({ nombre: negocio.nombre || '', giro: negocio.giro || '', logoUrl: negocio.logoUrl || '' })
-    toast.success(`Negocio activo: ${negocio.nombre}`)
   }
 
   const handleSubirLogo = async (e) => {
@@ -119,6 +125,20 @@ const ConfiguracionDashboard = () => {
       toast.success('Usuario eliminado')
       setDeleteTarget(null); cargar()
     } catch (err) { toast.error(err.message || 'Error al eliminar') }
+  }
+
+  const handleCrearNegocioLocal = async (e) => {
+    e.preventDefault(); setSavingNegocio(true)
+    try {
+      const nuevo = await handleCrearNegocio(formNegocio)
+      toast.success(`Negocio "${formNegocio.nombre}" creado`)
+      setFormNegocio({ nombre: '', giro: '' })
+      setShowFormNegocio(false)
+      cargar()
+      // activar el nuevo negocio automáticamente
+      if (nuevo?.id) cambiarNegocio(nuevo.id)
+    } catch (err) { toast.error(err.message || 'Error al crear negocio') }
+    finally { setSavingNegocio(false) }
   }
 
   const initials = username.slice(0, 2).toUpperCase()
@@ -261,7 +281,7 @@ const ConfiguracionDashboard = () => {
       )}
 
       {/* Multi-negocio */}
-      {negocios.length > 0 && (
+      {(negocios.length > 0 || isAdmin) && (
         <motion.div className="mt-6" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
           <AuroraCard glow="blue">
             <div className="p-6">
@@ -272,6 +292,12 @@ const ConfiguracionDashboard = () => {
                     <p className="text-sm text-muted-foreground">Selecciona el negocio activo</p></div>
                 </div>
                 <Badge variant="outline" className="border-blue-500/30 text-blue-400">{negocios.length} negocio{negocios.length !== 1 ? 's' : ''}</Badge>
+              </div>
+              {/* Botón nuevo negocio */}
+              <div className="mb-4 flex justify-end">
+                <Button size="sm" onClick={() => setShowFormNegocio(true)} className="gap-2 rounded-xl">
+                  <Plus size={14} /> Nuevo negocio
+                </Button>
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 {negocios.map(n => (
@@ -295,6 +321,33 @@ const ConfiguracionDashboard = () => {
       )}
 
     </PageLayout>
+
+    {/* Sheet: crear negocio */}
+    <Sheet open={showFormNegocio} onOpenChange={setShowFormNegocio}>
+      <SheetContent side="right" className="flex w-[440px] max-w-full flex-col gap-0 border-l p-0">
+        <SheetHeader className="shrink-0 border-b bg-muted/20 px-8 py-6">
+          <SheetTitle className="text-xl font-bold">Nuevo Negocio</SheetTitle>
+          <SheetDescription>Crea un nuevo negocio asociado a tu cuenta.</SheetDescription>
+        </SheetHeader>
+        <form onSubmit={handleCrearNegocioLocal} className="flex flex-1 flex-col gap-5 overflow-y-auto px-8 py-6">
+          <div className="space-y-2">
+            <Label>Nombre del negocio *</Label>
+            <Input value={formNegocio.nombre} onChange={e => setFormNegocio(f => ({...f, nombre: e.target.value}))} required className="h-11 rounded-xl" placeholder="Ferretería El Clavo" autoFocus />
+          </div>
+          <div className="space-y-2">
+            <Label>Giro comercial</Label>
+            <Input value={formNegocio.giro} onChange={e => setFormNegocio(f => ({...f, giro: e.target.value}))} className="h-11 rounded-xl" placeholder="Ferretería, Abarrotes..." />
+          </div>
+        </form>
+        <div className="flex shrink-0 justify-end gap-3 border-t bg-muted/20 px-8 py-5">
+          <Button variant="outline" onClick={() => setShowFormNegocio(false)} className="rounded-xl">Cancelar</Button>
+          <Button onClick={handleCrearNegocioLocal} disabled={savingNegocio} className="gap-2 rounded-xl">
+            {savingNegocio ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+            {savingNegocio ? 'Creando...' : 'Crear negocio'}
+          </Button>
+        </div>
+      </SheetContent>
+    </Sheet>
 
     {/* Sheet: crear usuario */}
     <Sheet open={showFormUser} onOpenChange={setShowFormUser}>

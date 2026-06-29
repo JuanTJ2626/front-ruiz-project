@@ -1,10 +1,11 @@
-import { useRef, useState, useEffect, useMemo } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Sphere, MeshDistortMaterial } from '@react-three/drei';
 import * as THREE from 'three';
 import gsap from 'gsap';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '../lib/utils';
+import { useApp } from '../context/AppContext';
 
 const LoginStyleBubble = ({ isHovered }) => {
   const meshRef = useRef();
@@ -40,6 +41,9 @@ const Sidebar = ({ onLogout }) => {
   const location = useLocation();
   const activePage = location.pathname.replace('/', '') || 'dashboard';
   const [isHovered, setIsHovered] = useState(false);
+
+  // Contexto global — negocios y cambio de negocio activo
+  const { negocios = [], negocioActivo, cambiarNegocio } = useApp();
 
   // Persiste el tema en localStorage — arranca en claro si no hay preferencia guardada
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -174,6 +178,28 @@ const Sidebar = ({ onLogout }) => {
               INVENTARIO
             </span>
           </div>
+
+          {/* Selector de negocio activo */}
+          {negocios.length > 1 && (
+            <div className="mb-5 w-[86%]">
+              <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-white/30">Negocio activo</p>
+              <select
+                value={negocioActivo || ''}
+                onChange={e => cambiarNegocio(Number(e.target.value))}
+                className="w-full rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2 text-xs font-semibold text-white backdrop-blur-sm focus:outline-none focus:ring-1 focus:ring-cyan-500/50"
+              >
+                {negocios.map(n => (
+                  <option key={n.id} value={n.id} className="bg-slate-900 text-white">{n.nombre}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          {negocios.length === 1 && (
+            <div className="mb-5 w-[86%]">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-white/30 mb-1">Negocio</p>
+              <p className="text-xs font-bold text-cyan-300 truncate">{negocios[0].nombre}</p>
+            </div>
+          )}
 
           <nav className="flex w-full flex-col items-center gap-2">
             {navItems.map((item) => (

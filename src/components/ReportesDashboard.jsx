@@ -13,6 +13,7 @@ import { AuroraCard, AuroraStatCard } from './ui/aurora-card'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { toast } from 'sonner'
+import { useApp } from '../context/AppContext'
 
 const CHART_COLORS = ['#06b6d4', '#10b981', '#8b5cf6', '#f59e0b', '#ec4899', '#3b82f6']
 
@@ -48,7 +49,8 @@ const ExportButton = ({ icon: Icon, label, format, onClick }) => (
   </button>
 )
 
-const ReportesDashboard = ({ productos = [] }) => {
+const ReportesDashboard = () => {
+  const { productos = [] } = useApp()
   const stats = useMemo(() => {
     const totalStock = productos.reduce((s, p) => s + (p.stock || 0), 0)
     const totalValue = productos.reduce((s, p) => s + ((p.precio || 0) * (p.stock || 0)), 0)

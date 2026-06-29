@@ -14,8 +14,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '
 import { toast } from 'sonner'
 import { cn } from '#/lib/utils'
 import { registrarMovimiento, getMovimientosNegocio } from '../services/movimientoService'
-import { getNegocioId, getUsuarioId } from '../services/config'
+import { getUsuarioId } from '../services/config'
 import { useRol } from '../hooks/useRol'
+import { useApp } from '../context/AppContext'
 
 const TIPO_CONFIG = {
   ENTRADA: { label: 'Entrada', icon: ArrowDownCircle, color: 'text-emerald-400', bg: 'border-emerald-500/30 bg-emerald-500/10' },
@@ -48,7 +49,7 @@ const MovimientoRow = ({ mov, index }) => {
         </p>
       </div>
       <Badge variant="outline" className={cn('shrink-0 font-bold', cfg.bg, cfg.color)}>
-        {tipo === 'SALIDA' ? '-' : '+'}{Math.abs(mov.cantidad)} uds
+        {tipo === 'AJUSTE' ? '=' : tipo === 'SALIDA' ? '-' : '+'}{Math.abs(mov.cantidad)} uds
       </Badge>
       <Badge variant="outline" className="hidden shrink-0 border-white/10 sm:inline-flex">
         {cfg.label}
@@ -57,7 +58,8 @@ const MovimientoRow = ({ mov, index }) => {
   )
 }
 
-const StockDashboard = ({ productos = [] }) => {
+const StockDashboard = () => {
+  const { productos = [], recargar } = useApp()
   const { isAdmin } = useRol()
   const [movimientos, setMovimientos] = useState([])
   const [loadingMovs, setLoadingMovs] = useState(true)
@@ -119,6 +121,7 @@ const StockDashboard = ({ productos = [] }) => {
       setForm({ productoId: '', tipo: 'ENTRADA', cantidad: '', motivo: '' })
       setShowForm(false)
       cargarMovimientos()
+      recargar() // sincroniza productos y dashboard en toda la app
     } catch (err) {
       toast.error(err.message || 'Error al registrar movimiento')
     } finally {
@@ -264,8 +267,28 @@ const StockDashboard = ({ productos = [] }) => {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="s-cant">Cantidad</Label>
-              <Input id="s-cant" type="number" min="1" value={form.cantidad} onChange={e => setForm({ ...form, cantidad: e.target.value })} required className="h-11 rounded-xl" placeholder="0" />
+              <Label htmlFor="s-cant">
+                {form.tipo === 'AJUSTE' ? 'Nuevo stock total' : 'Cantidad'}
+              </Label>
+              <Input
+                id="s-cant" type="number"
+                min={form.tipo === 'AJUSTE' ? '0' : '1'}
+                value={form.cantidad}
+                onChange={e => setForm({ ...form, cantidad: e.target.value })}
+                required className="h-11 rounded-xl"
+                placeholder={form.tipo === 'AJUSTE' ? 'Ej. 5 (el stock quedará en 5)' : 'Ej. 10'}
+              />
+              {form.tipo === 'AJUSTE' && (
+                <p className="text-xs text-amber-500/80">
+                  💡 El stock del producto se fijará exactamente a este número, sin importar el valor actual.
+                </p>
+              )}
+              {form.tipo === 'ENTRADA' && (
+                <p className="text-xs text-muted-foreground">Se sumará al stock actual.</p>
+              )}
+              {form.tipo === 'SALIDA' && (
+                <p className="text-xs text-muted-foreground">Se restará del stock actual.</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="s-motivo">Motivo <span className="text-muted-foreground">(opcional)</span></Label>

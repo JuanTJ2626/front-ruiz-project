@@ -11,6 +11,7 @@ import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import ParticleField from './ParticleField'
 import { getDashboard } from '../services/dashboardService'
+import { useApp } from '../context/AppContext'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -93,7 +94,8 @@ const LowStockItem = ({ name, stock, index }) => (
 /* ════════════════════════════════════════════════════════════
    DASHBOARD PRINCIPAL
 ════════════════════════════════════════════════════════════ */
-const Dashboard = ({ productos }) => {
+const Dashboard = () => {
+  const { productos = [] } = useApp()
   const dashRef = useRef(null)
   const [dashData, setDashData] = useState(null)
 
