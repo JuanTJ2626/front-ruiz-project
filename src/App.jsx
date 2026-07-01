@@ -10,10 +10,13 @@ import ProveedoresDashboard from './components/ProveedoresDashboard';
 import ClientesDashboard from './components/ClientesDashboard';
 import ReportesDashboard from './components/ReportesDashboard';
 import ConfiguracionDashboard from './components/ConfiguracionDashboard';
+import ChatbotWidget from './components/ChatbotWidget';
 import { Toaster } from './components/ui/sonner';
 import { clearAuthData } from './services/authService';
 
 function AppShell() {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
   const handleLogout = () => {
     clearAuthData();
     window.location.reload();
@@ -21,8 +24,11 @@ function AppShell() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar onLogout={handleLogout} />
-      <main className="flex-1 ml-0 md:ml-40 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]">
+      <Sidebar onLogout={handleLogout} onToggle={setSidebarOpen} />
+      <main
+        className="flex-1 transition-all duration-300"
+        style={{ marginLeft: sidebarOpen ? '224px' : '0' }}
+      >
         <Routes>
           <Route path="/"             element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard"    element={<Dashboard />} />
@@ -35,6 +41,7 @@ function AppShell() {
           <Route path="*"             element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </main>
+      <ChatbotWidget />
     </div>
   );
 }
