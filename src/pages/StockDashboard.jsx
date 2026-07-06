@@ -4,27 +4,30 @@ import {
   Archive, ArrowDownCircle, ArrowUpCircle, RefreshCw, AlertTriangle,
   Package, TrendingUp, Clock, Plus, Check, Loader2, Search, X
 } from 'lucide-react'
-import { PageLayout } from './PageLayout'
-import { AuroraCard, AuroraStatCard } from './ui/aurora-card'
-import { Badge } from './ui/badge'
-import { Button } from './ui/button'
-import { Input } from './ui/input'
-import { Label } from './ui/label'
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from './ui/sheet'
+import { PageLayout } from '../components/PageLayout'
+import { AuroraCard, AuroraStatCard } from '../components/ui/aurora-card'
+import { Badge } from '../components/ui/badge'
+import { Button } from '../components/ui/button'
+import { Input } from '../components/ui/input'
+import { Label } from '../components/ui/label'
+import { Progress } from '../components/ui/progress'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '../components/ui/sheet'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip'
 import { toast } from 'sonner'
 import { cn } from '#/lib/utils'
 import { registrarMovimiento, getMovimientosNegocio } from '../services/movimientoService'
 import { getUsuarioId } from '../services/config'
 import { useRol } from '../hooks/useRol'
 import { useApp } from '../context/AppContext'
+import { useStockStats } from '../hooks/useStockStats'
+import { useErrorHandler } from '../hooks/useErrorHandler'
 
 const TIPO_CONFIG = {
   ENTRADA: { label: 'Entrada', icon: ArrowDownCircle, color: 'text-emerald-400', bg: 'border-emerald-500/30 bg-emerald-500/10' },
   SALIDA:  { label: 'Salida',  icon: ArrowUpCircle,   color: 'text-red-400',     bg: 'border-red-500/30 bg-red-500/10' },
   AJUSTE:  { label: 'Ajuste',  icon: RefreshCw,       color: 'text-amber-400',   bg: 'border-amber-500/30 bg-amber-500/10' },
 }
-
-
 
 const MovimientoRow = ({ mov, index }) => {
   const tipo = mov.tipo || 'ENTRADA'
@@ -61,6 +64,8 @@ const MovimientoRow = ({ mov, index }) => {
 const StockDashboard = () => {
   const { productos = [], recargar } = useApp()
   const { isAdmin } = useRol()
+  const stats = useStockStats() // Hook compartido
+  const { handleError } = useErrorHandler()
   const [movimientos, setMovimientos] = useState([])
   const [loadingMovs, setLoadingMovs] = useState(true)
   const [search, setSearch] = useState('')
@@ -73,22 +78,23 @@ const StockDashboard = () => {
       setLoadingMovs(true)
       const data = await getMovimientosNegocio(30)
       setMovimientos(Array.isArray(data) ? data : [])
-    } catch {
-      toast.error('No se pudieron cargar los movimientos')
+    } catch (err) {
+      handleError(err, {
+        operation: 'cargar el historial de movimientos',
+        forbiddenMsg: 'No tienes permiso para ver los movimientos',
+      })
     } finally {
       setLoadingMovs(false)
     }
-  }, [])
+  }, [handleError])
 
   useEffect(() => { cargarMovimientos() }, [cargarMovimientos])
 
-  const stats = useMemo(() => {
-    const totalStock = productos.reduce((s, p) => s + (p.stock || 0), 0)
-    const lowStock = productos.filter(p => p.stock <= (p.stockMinimo || 5))
+  const movStats = useMemo(() => {
     const entradas = movimientos.filter(m => m.tipo === 'ENTRADA').reduce((s, m) => s + m.cantidad, 0)
     const salidas  = movimientos.filter(m => m.tipo === 'SALIDA').reduce((s, m) => s + m.cantidad, 0)
-    return { totalStock, lowStock, entradas, salidas }
-  }, [productos, movimientos])
+    return { entradas, salidas }
+  }, [movimientos])
 
   const filtered = useMemo(() => {
     if (!search.trim()) return movimientos
@@ -106,31 +112,42 @@ const StockDashboard = () => {
   )
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    e?.preventDefault()
+    if (!form.productoId) return toast.error('Selecciona un producto antes de continuar')
+    const cantidad = parseInt(form.cantidad)
+    if (!form.cantidad || isNaN(cantidad) || cantidad < (form.tipo === 'AJUSTE' ? 0 : 1)) {
+      return toast.error(form.tipo === 'AJUSTE' ? 'Ingresa el nuevo stock total (mínimo 0)' : 'La cantidad debe ser mayor a cero')
+    }
     setSaving(true)
     try {
       const usuarioId = Number(getUsuarioId())
       await registrarMovimiento({
         tipo: form.tipo,
-        cantidad: parseInt(form.cantidad),
+        cantidad,
         motivo: form.motivo || undefined,
         productoId: Number(form.productoId),
         usuarioId,
       })
-      toast.success(`Movimiento de ${form.tipo.toLowerCase()} registrado`)
+      const tipoLabel = { ENTRADA: 'entrada', SALIDA: 'salida', AJUSTE: 'ajuste' }[form.tipo] || form.tipo.toLowerCase()
+      toast.success(`Movimiento de ${tipoLabel} registrado`)
       setForm({ productoId: '', tipo: 'ENTRADA', cantidad: '', motivo: '' })
       setShowForm(false)
       cargarMovimientos()
-      recargar() // sincroniza productos y dashboard en toda la app
+      recargar()
     } catch (err) {
-      toast.error(err.message || 'Error al registrar movimiento')
+      handleError(err, {
+        operation: 'registrar el movimiento',
+        validationMsg: 'Datos inválidos. Verifica la cantidad e intenta de nuevo',
+        insufficientMsg: 'Stock insuficiente para registrar esta salida',
+        forbiddenMsg: 'No tienes permiso para registrar movimientos',
+      })
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <>
+    <TooltipProvider>
       <PageLayout
         title="Control de Stock"
         subtitle="Registra entradas, salidas y ajustes de inventario. Alertas automáticas cuando el stock baja del mínimo."
@@ -142,10 +159,10 @@ const StockDashboard = () => {
         }
       >
         <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <AuroraStatCard icon={Archive} label="Stock Total" value={stats.totalStock.toLocaleString()} sub="unidades actuales" glow="cyan" delay={80} />
-          <AuroraStatCard icon={ArrowDownCircle} label="Entradas" value={stats.entradas} sub="unidades recibidas" glow="emerald" delay={160} />
-          <AuroraStatCard icon={ArrowUpCircle} label="Salidas" value={stats.salidas} sub="unidades vendidas" glow="rose" delay={240} />
-          <AuroraStatCard icon={AlertTriangle} label="Alertas" value={stats.lowStock.length} sub="stock ≤ mínimo" glow="amber" delay={320} trend={stats.lowStock.length > 0 ? 'Crítico' : undefined} />
+          <AuroraStatCard icon={Archive} label="Stock Total" value={(stats.totalStock ?? 0).toLocaleString()} sub="unidades actuales" glow="cyan" delay={80} />
+          <AuroraStatCard icon={ArrowDownCircle} label="Entradas" value={movStats.entradas} sub="unidades recibidas" glow="emerald" delay={160} />
+          <AuroraStatCard icon={ArrowUpCircle} label="Salidas" value={movStats.salidas} sub="unidades vendidas" glow="rose" delay={240} />
+          <AuroraStatCard icon={AlertTriangle} label="Alertas" value={stats.productosStockCritico ?? 0} sub="stock ≤ mínimo" glow="amber" delay={320} trend={(stats.productosStockCritico ?? 0) > 0 ? 'Crítico' : undefined} />
         </div>
 
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
@@ -168,7 +185,18 @@ const StockDashboard = () => {
                   </div>
                 </div>
                 <div className="flex flex-col gap-2">
-                  {filtered.map((m, i) => <MovimientoRow key={m.id} mov={m} index={i} />)}
+                  {loadingMovs ? (
+                    [...Array(4)].map((_, i) => (
+                      <div key={i} className="h-16 rounded-xl bg-white/[0.03] animate-pulse" />
+                    ))
+                  ) : filtered.length === 0 ? (
+                    <div className="flex flex-col items-center py-12 text-center">
+                      <Archive size={30} className="mb-3 text-muted-foreground/30" />
+                      <p className="text-sm text-muted-foreground">Sin movimientos registrados</p>
+                    </div>
+                  ) : (
+                    filtered.map((m, i) => <MovimientoRow key={m.id} mov={m} index={i} />)
+                  )}
                 </div>
               </div>
             </AuroraCard>
@@ -195,18 +223,34 @@ const StockDashboard = () => {
                     <p className="mt-1 text-sm text-muted-foreground">Ningún producto bajo el mínimo.</p>
                   </div>
                 ) : (
-                  <div className="flex flex-col gap-2">
-                    {lowItems.map(p => (
-                      <div key={p.id} className="flex items-center justify-between rounded-xl border border-red-500/15 bg-red-500/5 p-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <Package size={16} className="shrink-0 text-red-400" />
-                          <span className="truncate text-sm font-semibold text-foreground">{p.nombre}</span>
+                  <div className="flex flex-col gap-3">
+                    {lowItems.map(p => {
+                      const min = p.stockMinimo || 5
+                      const pct = Math.min(Math.round((p.stock / (min * 2)) * 100), 100)
+                      return (
+                        <div key={p.id} className="rounded-xl border border-red-500/15 bg-red-500/5 p-3 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Package size={14} className="shrink-0 text-red-400" />
+                              <span className="truncate text-sm font-semibold text-foreground">{p.nombre}</span>
+                            </div>
+                            <Badge variant="outline" className="shrink-0 border-red-500/30 bg-red-500/10 text-red-400">
+                              {p.stock} uds
+                            </Badge>
+                          </div>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div>
+                                <Progress value={pct} className="h-1.5 bg-red-500/10 [&>div]:bg-red-500" />
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom">
+                              <p className="text-xs">Stock: {p.stock} / Mínimo: {min}</p>
+                            </TooltipContent>
+                          </Tooltip>
                         </div>
-                        <Badge variant="outline" className="shrink-0 border-red-500/30 bg-red-500/10 text-red-400">
-                          {p.stock} uds
-                        </Badge>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
 
@@ -229,21 +273,24 @@ const StockDashboard = () => {
             <SheetDescription>Entrada, salida o ajuste de stock.</SheetDescription>
           </SheetHeader>
           <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-5 overflow-y-auto px-8 py-6">
+            {/* Selector de producto */}
             <div className="space-y-2">
               <Label htmlFor="s-producto">Producto</Label>
-              <select
-                id="s-producto"
-                value={form.productoId}
-                onChange={e => setForm({ ...form, productoId: e.target.value })}
-                required
-                className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground"
-              >
-                <option value="">Selecciona un producto...</option>
-                {productos.map(p => (
-                  <option key={p.id} value={p.id}>{p.nombre} — Stock: {p.stock}</option>
-                ))}
-              </select>
+              <Select value={form.productoId} onValueChange={v => setForm({ ...form, productoId: v })}>
+                <SelectTrigger id="s-producto" className="h-11 rounded-xl">
+                  <SelectValue placeholder="Selecciona un producto..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {productos.map(p => (
+                    <SelectItem key={p.id} value={String(p.id)}>
+                      {p.nombre} — Stock: {p.stock}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+
+            {/* Tipo de movimiento */}
             <div className="space-y-2">
               <Label>Tipo de movimiento</Label>
               <div className="grid grid-cols-3 gap-2">
@@ -266,6 +313,8 @@ const StockDashboard = () => {
                 })}
               </div>
             </div>
+
+            {/* Cantidad */}
             <div className="space-y-2">
               <Label htmlFor="s-cant">
                 {form.tipo === 'AJUSTE' ? 'Nuevo stock total' : 'Cantidad'}
@@ -290,6 +339,8 @@ const StockDashboard = () => {
                 <p className="text-xs text-muted-foreground">Se restará del stock actual.</p>
               )}
             </div>
+
+            {/* Motivo */}
             <div className="space-y-2">
               <Label htmlFor="s-motivo">Motivo <span className="text-muted-foreground">(opcional)</span></Label>
               <Input id="s-motivo" value={form.motivo} onChange={e => setForm({ ...form, motivo: e.target.value })} className="h-11 rounded-xl" placeholder="Ej. Venta mostrador, Ajuste de inventario..." />
@@ -304,7 +355,7 @@ const StockDashboard = () => {
           </div>
         </SheetContent>
       </Sheet>
-    </>
+    </TooltipProvider>
   )
 }
 

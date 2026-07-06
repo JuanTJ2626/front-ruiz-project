@@ -54,8 +54,12 @@ export function AppProvider({ children, isAuthenticated }) {
   const cambiarNegocio = useCallback((nuevoId) => {
     localStorage.setItem('negocioId', String(nuevoId));
     setNegocioActivo(nuevoId);
-    // recargar datos del nuevo negocio
-    setTimeout(() => recargar(), 50);
+    // Limpia datos viejos inmediatamente para que las páginas no muestren info del negocio anterior
+    setProductos([]);
+    setCategorias([]);
+    setDashData(null);
+    // Recarga con el nuevo negocioId ya en localStorage
+    recargar();
     toast.success('Negocio cambiado');
   }, [recargar]);
 

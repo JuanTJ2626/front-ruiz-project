@@ -4,14 +4,14 @@ import {
   Package, Archive, DollarSign, AlertTriangle,
   Clock, Box, CheckCircle2, ArrowUpRight, Activity
 } from 'lucide-react'
-import { Badge } from './ui/badge'
-import { AuroraCard, AuroraStatCard } from './ui/aurora-card'
+import { Badge } from '../components/ui/badge'
+import { AuroraCard, AuroraStatCard } from '../components/ui/aurora-card'
 import { cn } from '#/lib/utils'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import ParticleField from './ParticleField'
-import { getDashboard } from '../services/dashboardService'
+import ParticleField from '../components/ParticleField'
 import { useApp } from '../context/AppContext'
+import { useStockStats } from '../hooks/useStockStats'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -95,37 +95,21 @@ const LowStockItem = ({ name, stock, index }) => (
    DASHBOARD PRINCIPAL
 ════════════════════════════════════════════════════════════ */
 const Dashboard = () => {
-  const { productos = [] } = useApp()
+  const { productos = [], dashData } = useApp()
   const dashRef = useRef(null)
-  const [dashData, setDashData] = useState(null)
+  
+  // Usa hook compartido para calcular estadísticas (elimina duplicación)
+  const stats = useStockStats(productos)
 
-  // Carga los datos del endpoint /dashboard/negocio/{id}
-  useEffect(() => {
-    getDashboard()
-      .then(data => setDashData(data))
-      .catch(() => {/* fallback a props */})
-  }, [])
-
-  // Usa datos del backend si están disponibles, fallback a props
-  const totalProductos = dashData?.totalProductos ?? productos.length
-  const totalStock = dashData ? null : productos.reduce((s, p) => s + (p.stock || 0), 0)
-  const totalValue = dashData?.valorTotalInventario ?? productos.reduce((s, p) => s + ((p.precio || 0) * (p.stock || 0)), 0)
-  const lowStockCount = dashData?.productosStockCritico ?? productos.filter(p => p.stock <= 5).length
-  const pedidosPendientes = dashData?.pedidosPendientes ?? 0
-  const recentMovimientos = dashData?.ultimosMovimientos ?? []
-  const productosBajoStock = dashData?.productosBajoStock ?? productos.filter(p => p.stock <= 5)
-
-  const stats = useMemo(() => {
-    const ts = totalStock ?? productos.reduce((s, p) => s + (p.stock || 0), 0)
-    return {
-      totalStock: ts,
-      totalValue,
-      lowStock: productosBajoStock,
-    }
-  }, [totalStock, totalValue, productosBajoStock, productos])
+  // Usa datos del backend si están disponibles, fallback a stats calculados
+  const totalProductos = dashData?.totalProductos ?? stats.totalProductos
+  const totalStock = dashData?.totalStock ?? stats.totalStock
+  const totalValue = dashData?.valorTotalInventario ?? stats.valorTotalInventario
+  const lowStockCount = dashData?.productosStockCritico ?? stats.productosStockCritico
+  const healthPct = stats.healthPercent
 
   const lowItems = useMemo(
-    () => [...productos].filter(p => p.stock <= 5).sort((a, b) => a.stock - b.stock),
+    () => [...productos].filter(p => p.stock <= (p.stockMinimo || 5)).sort((a, b) => a.stock - b.stock),
     [productos]
   )
   const recent = useMemo(() => [...productos].slice(-5).reverse(), [productos])
@@ -133,9 +117,6 @@ const Dashboard = () => {
     () => [...productos].sort((a, b) => (b.stock || 0) - (a.stock || 0)).slice(0, 5),
     [productos]
   )
-
-  const healthPct = productos.length === 0 ? 100
-    : Math.round(((productos.length - stats.lowStock.length) / productos.length) * 100)
 
   /* ── GSAP ── */
   useEffect(() => {
@@ -261,7 +242,7 @@ const Dashboard = () => {
                     </div>
                     <div>
                       <p className="text-[10px] font-semibold uppercase tracking-widest text-white/40">Alertas activas</p>
-                      <p className="font-heading text-lg font-bold text-white">{stats.lowStock.length}</p>
+                      <p className="font-heading text-lg font-bold text-white">{lowStockCount}</p>
                     </div>
                   </div>
                 </div>
@@ -276,10 +257,10 @@ const Dashboard = () => {
             <AuroraStatCard icon={Package} label="Total Productos" value={totalProductos} sub="en catálogo activo" glow="cyan" delay={0} />
           </div>
           <div className="gsap-kpi">
-            <AuroraStatCard icon={Archive} label="Stock Total" value={stats.totalStock} sub="unidades en inventario" glow="emerald" delay={0} />
+            <AuroraStatCard icon={Archive} label="Stock Total" value={totalStock} sub="unidades en inventario" glow="emerald" delay={0} />
           </div>
           <div className="gsap-kpi">
-            <AuroraStatCard icon={DollarSign} label="Valor del Inventario" value={stats.totalValue} prefix="$" decimals={2} sub="precio × stock en tiempo real" glow="violet" delay={0} />
+            <AuroraStatCard icon={DollarSign} label="Valor del Inventario" value={totalValue} prefix="$" decimals={2} sub="precio × stock en tiempo real" glow="violet" delay={0} />
           </div>
           <div className="gsap-kpi">
             <AuroraStatCard

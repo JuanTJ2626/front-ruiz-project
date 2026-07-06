@@ -1,20 +1,24 @@
 import { useMemo, useState, useEffect, useCallback } from 'react'
 import { motion } from 'motion/react'
 import { Truck, Plus, Mail, Phone, Search, Package, Clock, ShoppingCart,
-  CheckCircle2, AlertCircle, X, Check, Loader2, User, ChevronRight } from 'lucide-react'
-import { PageLayout } from './PageLayout'
-import { AuroraCard, AuroraStatCard } from './ui/aurora-card'
-import { Badge } from './ui/badge'
-import { Button } from './ui/button'
-import { Input } from './ui/input'
-import { Label } from './ui/label'
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from './ui/sheet'
+  CheckCircle2, X, Check, Loader2, User } from 'lucide-react'
+import { PageLayout } from '../components/PageLayout'
+import { AuroraCard, AuroraStatCard } from '../components/ui/aurora-card'
+import { Badge } from '../components/ui/badge'
+import { Button } from '../components/ui/button'
+import { Input } from '../components/ui/input'
+import { Label } from '../components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
+import { Separator } from '../components/ui/separator'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '../components/ui/sheet'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip'
 import { toast } from 'sonner'
 import { cn } from '#/lib/utils'
 import { getProveedores, crearProveedor } from '../services/proveedorService'
-import { getPedidosPendientes, crearPedido, cambiarEstadoPedido } from '../services/pedidoService'
+import { getPedidos, crearPedido, cambiarEstadoPedido } from '../services/pedidoService'
 import { getUsuarioId } from '../services/config'
 import { useRol } from '../hooks/useRol'
+import { useApp } from '../context/AppContext'
 
 /* ── Fila de proveedor ─────────────────────────────────────── */
 const ProveedorRow = ({ proveedor, index, pedidosPorProveedor }) => {
@@ -47,7 +51,7 @@ const ProveedorRow = ({ proveedor, index, pedidosPorProveedor }) => {
   )
 }
 
-/* ── Fila de pedido ────────────────────────────────────────── */
+/* ── Estilos de estado de pedido ───────────────────────────── */
 const estadoPedidoStyle = {
   PENDIENTE: 'border-amber-500/30 bg-amber-500/10 text-amber-400',
   ENVIADO:   'border-blue-500/30 bg-blue-500/10 text-blue-400',
@@ -64,20 +68,15 @@ const PedidoRow = ({ pedido, index, onCambiarEstado, isAdmin }) => (
     <div className="min-w-0 flex-1">
       <p className="truncate text-sm font-bold text-foreground">{pedido.descripcion}</p>
       <p className="text-xs text-muted-foreground">
-        {pedido.proveedorNombre} · {pedido.cantidad} uds
+        {pedido.proveedorNombre} · {pedido.cantidad} {pedido.cantidad === 1 ? 'unidad' : 'unidades'}
         {pedido.precioUnitario ? ` · $${Number(pedido.precioUnitario).toFixed(2)} c/u` : ''}
+        {pedido.productoNombre ? ` · 📦 ${pedido.productoNombre}` : ''}
       </p>
     </div>
     <Badge variant="outline" className={cn('shrink-0 text-[10px] font-bold', estadoPedidoStyle[pedido.estado] ?? '')}>
       {pedido.estado}
     </Badge>
-    {pedido.estado === 'PENDIENTE' && isAdmin && (
-      <Button size="sm" variant="outline" className="shrink-0 h-8 rounded-lg text-xs gap-1"
-        onClick={() => onCambiarEstado(pedido.id, 'ENVIADO')}>
-        <ChevronRight size={12} /> Enviado
-      </Button>
-    )}
-    {pedido.estado === 'ENVIADO' && isAdmin && (
+    {(pedido.estado === 'PENDIENTE' || pedido.estado === 'ENVIADO') && isAdmin && (
       <Button size="sm" className="shrink-0 h-8 rounded-lg text-xs gap-1 bg-emerald-600 hover:bg-emerald-700"
         onClick={() => onCambiarEstado(pedido.id, 'RECIBIDO')}>
         <Check size={12} /> Recibido
@@ -96,16 +95,17 @@ const ProveedoresDashboard = () => {
   const [showFormPed, setShowFormPed]     = useState(false)
   const [saving, setSaving]               = useState(false)
   const [formProv, setFormProv]           = useState({ nombre: '', contacto: '', email: '', telefono: '' })
-  const [formPed, setFormPed]             = useState({ descripcion: '', cantidad: '', precioUnitario: '', fechaEsperada: '', notas: '', proveedorId: '' })
+  const [formPed, setFormPed]             = useState({ descripcion: '', cantidad: '', precioUnitario: '', fechaEsperada: '', notas: '', proveedorId: '', productoId: '' })
 
   const { isAdmin } = useRol()
+  const { productos = [] } = useApp()
 
   const cargar = useCallback(async () => {
     try {
       setLoading(true)
       const [provData, pedData] = await Promise.all([
         getProveedores().catch(() => []),
-        getPedidosPendientes().catch(() => []),
+        getPedidos().catch(() => []),
       ])
       setProveedores(Array.isArray(provData) ? provData : [])
       setPedidos(Array.isArray(pedData) ? pedData : [])
@@ -115,7 +115,6 @@ const ProveedoresDashboard = () => {
 
   useEffect(() => { cargar() }, [cargar])
 
-  /* pedidos pendientes agrupados por proveedor */
   const pedidosPorProveedor = useMemo(() => {
     return pedidos.reduce((acc, p) => {
       if (p.estado === 'PENDIENTE') acc[p.proveedorId] = (acc[p.proveedorId] || 0) + 1
@@ -135,29 +134,50 @@ const ProveedoresDashboard = () => {
 
   const handleGuardarProv = async (e) => {
     e.preventDefault(); setSaving(true)
+    if (!formProv.nombre?.trim()) {
+      setSaving(false)
+      return toast.error('El nombre o empresa del proveedor es obligatorio')
+    }
     try {
-      await crearProveedor(formProv)
-      toast.success('Proveedor registrado')
+      await crearProveedor({ ...formProv, nombre: formProv.nombre.trim() })
+      toast.success(`Proveedor "${formProv.nombre.trim()}" registrado`)
       setFormProv({ nombre: '', contacto: '', email: '', telefono: '' })
       setShowFormProv(false); cargar()
-    } catch (err) { toast.error(err.message || 'Error al guardar') }
+    } catch (err) {
+      const status = err?.response?.status
+      if (status === 409) toast.error('Ya existe un proveedor con ese nombre')
+      else if (status === 403) toast.error('No tienes permiso para agregar proveedores')
+      else toast.error('No se pudo registrar el proveedor. Intenta de nuevo')
+    }
     finally { setSaving(false) }
   }
 
   const handleGuardarPed = async (e) => {
     e.preventDefault(); setSaving(true)
+    if (!formPed.proveedorId) { setSaving(false); return toast.error('Selecciona un proveedor para el pedido') }
+    if (!formPed.descripcion?.trim()) { setSaving(false); return toast.error('La descripción del pedido es obligatoria') }
+    const cantidad = parseInt(formPed.cantidad)
+    if (!formPed.cantidad || isNaN(cantidad) || cantidad < 1) { setSaving(false); return toast.error('La cantidad debe ser mayor a cero') }
     try {
       await crearPedido({
-        ...formPed,
-        cantidad: parseInt(formPed.cantidad),
+        descripcion:    formPed.descripcion.trim(),
+        notas:          formPed.notas || undefined,
+        fechaEsperada:  formPed.fechaEsperada || undefined,
+        cantidad,
         precioUnitario: formPed.precioUnitario ? parseFloat(formPed.precioUnitario) : undefined,
-        proveedorId: parseInt(formPed.proveedorId),
-        usuarioId: parseInt(getUsuarioId()),
+        proveedorId:    parseInt(formPed.proveedorId),
+        productoId:     formPed.productoId ? parseInt(formPed.productoId) : undefined,
+        usuarioId:      parseInt(getUsuarioId()),
       })
       toast.success('Pedido creado correctamente')
-      setFormPed({ descripcion: '', cantidad: '', precioUnitario: '', fechaEsperada: '', notas: '', proveedorId: '' })
+      setFormPed({ descripcion: '', cantidad: '', precioUnitario: '', fechaEsperada: '', notas: '', proveedorId: '', productoId: '' })
       setShowFormPed(false); cargar()
-    } catch (err) { toast.error(err.message || 'Error al crear pedido') }
+    } catch (err) {
+      const status = err?.response?.status
+      if (status === 403) toast.error('No tienes permiso para crear pedidos')
+      else if (status === 404) toast.error('El proveedor seleccionado ya no existe')
+      else toast.error('No se pudo crear el pedido. Intenta de nuevo')
+    }
     finally { setSaving(false) }
   }
 
@@ -166,11 +186,16 @@ const ProveedoresDashboard = () => {
       await cambiarEstadoPedido(id, estado)
       toast.success(`Pedido marcado como ${estado.toLowerCase()}`)
       cargar()
-    } catch (err) { toast.error(err.message || 'Error al cambiar estado') }
+    } catch (err) {
+      const status = err?.response?.status
+      if (status === 403) toast.error('No tienes permiso para cambiar el estado del pedido')
+      else if (status === 404) toast.error('El pedido ya no existe')
+      else toast.error('No se pudo actualizar el estado del pedido')
+    }
   }
 
   return (
-    <>
+    <TooltipProvider>
       <PageLayout
         title="Directorio de Proveedores"
         subtitle="Gestiona contactos, pedidos pendientes y recepción de mercancía."
@@ -178,26 +203,36 @@ const ProveedoresDashboard = () => {
         actions={
           isAdmin && (
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setShowFormPed(true)} className="gap-2 rounded-xl">
-                <ShoppingCart size={16} /> Nuevo Pedido
-              </Button>
-              <Button onClick={() => setShowFormProv(true)} className="gap-2 rounded-xl shadow-md">
-                <Plus size={16} /> Nuevo Proveedor
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" onClick={() => setShowFormPed(true)} className="gap-2 rounded-xl">
+                    <ShoppingCart size={16} /> Nuevo Pedido
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Crear un pedido a un proveedor</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button onClick={() => setShowFormProv(true)} className="gap-2 rounded-xl shadow-md">
+                    <Plus size={16} /> Nuevo Proveedor
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Registrar un nuevo proveedor</TooltipContent>
+              </Tooltip>
             </div>
           )
         }
       >
         {/* KPIs */}
         <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <AuroraStatCard icon={Truck}        label="Proveedores"       value={proveedores.length} sub="registrados"      glow="cyan"   delay={80} />
+          <AuroraStatCard icon={Truck}        label="Proveedores"        value={proveedores.length} sub="registrados"          glow="cyan"   delay={80} />
           <AuroraStatCard icon={Clock}        label="Pedidos Pendientes" value={pedidos.filter(p => p.estado === 'PENDIENTE').length} sub="por recibir" glow="amber" delay={160} trend={pedidos.filter(p=>p.estado==='PENDIENTE').length > 0 ? 'Pendiente' : undefined} />
-          <AuroraStatCard icon={CheckCircle2} label="Recibidos"         value={pedidos.filter(p => p.estado === 'RECIBIDO').length}  sub="pedidos completados" glow="emerald" delay={240} />
-          <AuroraStatCard icon={Package}      label="Total Pedidos"     value={pedidos.length}     sub="en el sistema"   glow="violet" delay={320} />
+          <AuroraStatCard icon={CheckCircle2} label="Recibidos"          value={pedidos.filter(p => p.estado === 'RECIBIDO').length}  sub="pedidos completados" glow="emerald" delay={240} />
+          <AuroraStatCard icon={Package}      label="Total Pedidos"      value={pedidos.length}     sub="en el sistema"        glow="violet" delay={320} />
         </div>
 
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
-          {/* Proveedores */}
+          {/* Lista de proveedores */}
           <motion.div className="xl:col-span-3" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
             <AuroraCard glow="blue" className="h-full">
               <div className="p-6">
@@ -228,7 +263,7 @@ const ProveedoresDashboard = () => {
             </AuroraCard>
           </motion.div>
 
-          {/* Pedidos pendientes */}
+          {/* Pedidos activos */}
           <motion.div className="xl:col-span-2" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
             <AuroraCard glow="amber" className="h-full">
               <div className="p-6">
@@ -269,10 +304,23 @@ const ProveedoresDashboard = () => {
             <SheetDescription>Registra un proveedor en el directorio.</SheetDescription>
           </SheetHeader>
           <form onSubmit={handleGuardarProv} className="flex flex-1 flex-col gap-5 overflow-y-auto px-8 py-6">
-            <div className="space-y-2"><Label>Nombre / Empresa *</Label><Input value={formProv.nombre} onChange={e => setFormProv({...formProv,nombre:e.target.value})} required className="h-11 rounded-xl" /></div>
-            <div className="space-y-2"><Label>Persona de contacto</Label><Input value={formProv.contacto} onChange={e => setFormProv({...formProv,contacto:e.target.value})} className="h-11 rounded-xl" /></div>
-            <div className="space-y-2"><Label>Correo</Label><Input type="email" value={formProv.email} onChange={e => setFormProv({...formProv,email:e.target.value})} className="h-11 rounded-xl" /></div>
-            <div className="space-y-2"><Label>Teléfono</Label><Input value={formProv.telefono} onChange={e => setFormProv({...formProv,telefono:e.target.value})} className="h-11 rounded-xl" /></div>
+            <div className="space-y-2">
+              <Label>Nombre / Empresa *</Label>
+              <Input value={formProv.nombre} onChange={e => setFormProv({...formProv,nombre:e.target.value})} required className="h-11 rounded-xl" placeholder="Distribuidora López" />
+            </div>
+            <div className="space-y-2">
+              <Label>Persona de contacto</Label>
+              <Input value={formProv.contacto} onChange={e => setFormProv({...formProv,contacto:e.target.value})} className="h-11 rounded-xl" placeholder="Juan López" />
+            </div>
+            <Separator className="opacity-30" />
+            <div className="space-y-2">
+              <Label>Correo electrónico</Label>
+              <Input type="email" value={formProv.email} onChange={e => setFormProv({...formProv,email:e.target.value})} className="h-11 rounded-xl" placeholder="contacto@proveedor.com" />
+            </div>
+            <div className="space-y-2">
+              <Label>Teléfono</Label>
+              <Input value={formProv.telefono} onChange={e => setFormProv({...formProv,telefono:e.target.value})} className="h-11 rounded-xl" placeholder="+52 55 0000 0000" />
+            </div>
           </form>
           <div className="flex shrink-0 justify-end gap-3 border-t bg-muted/20 px-8 py-5">
             <Button variant="outline" onClick={() => setShowFormProv(false)} className="rounded-xl">Cancelar</Button>
@@ -292,20 +340,66 @@ const ProveedoresDashboard = () => {
             <SheetDescription>Crea un pedido a un proveedor.</SheetDescription>
           </SheetHeader>
           <form onSubmit={handleGuardarPed} className="flex flex-1 flex-col gap-5 overflow-y-auto px-8 py-6">
+            {/* Proveedor */}
             <div className="space-y-2">
               <Label>Proveedor *</Label>
-              <select value={formPed.proveedorId} onChange={e => setFormPed({...formPed,proveedorId:e.target.value})} required className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm">
-                <option value="">Selecciona un proveedor...</option>
-                {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-              </select>
+              <Select value={formPed.proveedorId} onValueChange={v => setFormPed({...formPed, proveedorId: v})}>
+                <SelectTrigger className="h-11 rounded-xl">
+                  <SelectValue placeholder="Selecciona un proveedor..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {proveedores.map(p => (
+                    <SelectItem key={p.id} value={String(p.id)}>{p.nombre}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <div className="space-y-2"><Label>Descripción *</Label><Input value={formPed.descripcion} onChange={e => setFormPed({...formPed,descripcion:e.target.value})} required className="h-11 rounded-xl" placeholder="Ej. Martillos de acero 500g" /></div>
+
+            {/* Descripción */}
+            <div className="space-y-2">
+              <Label>Descripción *</Label>
+              <Input value={formPed.descripcion} onChange={e => setFormPed({...formPed,descripcion:e.target.value})} required className="h-11 rounded-xl" placeholder="Ej. Martillos de acero 500g" />
+            </div>
+
+            {/* Producto del inventario */}
+            <div className="space-y-2">
+              <Label>Producto del inventario <span className="text-muted-foreground">(opcional)</span></Label>
+              <Select value={formPed.productoId} onValueChange={v => setFormPed({...formPed, productoId: v})}>
+                <SelectTrigger className="h-11 rounded-xl">
+                  <SelectValue placeholder="Sin vincular a producto" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Sin vincular a producto</SelectItem>
+                  {productos.map(p => (
+                    <SelectItem key={p.id} value={String(p.id)}>{p.nombre} — Stock: {p.stock}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">Si lo vinculas, al marcar el pedido como <strong>Recibido</strong> el stock sube automáticamente.</p>
+            </div>
+
+            <Separator className="opacity-30" />
+
+            {/* Cantidad y precio */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>Cantidad *</Label><Input type="number" min="1" value={formPed.cantidad} onChange={e => setFormPed({...formPed,cantidad:e.target.value})} required className="h-11 rounded-xl" /></div>
-              <div className="space-y-2"><Label>Precio unitario</Label><Input type="number" step="0.01" min="0" value={formPed.precioUnitario} onChange={e => setFormPed({...formPed,precioUnitario:e.target.value})} className="h-11 rounded-xl" placeholder="0.00" /></div>
+              <div className="space-y-2">
+                <Label>Cantidad *</Label>
+                <Input type="number" min="1" value={formPed.cantidad} onChange={e => setFormPed({...formPed,cantidad:e.target.value})} required className="h-11 rounded-xl" placeholder="0" />
+              </div>
+              <div className="space-y-2">
+                <Label>Precio unitario</Label>
+                <Input type="number" step="0.01" min="0" value={formPed.precioUnitario} onChange={e => setFormPed({...formPed,precioUnitario:e.target.value})} className="h-11 rounded-xl" placeholder="0.00" />
+              </div>
             </div>
-            <div className="space-y-2"><Label>Fecha esperada</Label><Input type="date" value={formPed.fechaEsperada} onChange={e => setFormPed({...formPed,fechaEsperada:e.target.value})} className="h-11 rounded-xl" /></div>
-            <div className="space-y-2"><Label>Notas</Label><Input value={formPed.notas} onChange={e => setFormPed({...formPed,notas:e.target.value})} className="h-11 rounded-xl" placeholder="Instrucciones adicionales..." /></div>
+
+            <div className="space-y-2">
+              <Label>Fecha esperada</Label>
+              <Input type="date" value={formPed.fechaEsperada} onChange={e => setFormPed({...formPed,fechaEsperada:e.target.value})} className="h-11 rounded-xl" />
+            </div>
+            <div className="space-y-2">
+              <Label>Notas</Label>
+              <Input value={formPed.notas} onChange={e => setFormPed({...formPed,notas:e.target.value})} className="h-11 rounded-xl" placeholder="Instrucciones adicionales..." />
+            </div>
           </form>
           <div className="flex shrink-0 justify-end gap-3 border-t bg-muted/20 px-8 py-5">
             <Button variant="outline" onClick={() => setShowFormPed(false)} className="rounded-xl">Cancelar</Button>
@@ -316,7 +410,7 @@ const ProveedoresDashboard = () => {
           </div>
         </SheetContent>
       </Sheet>
-    </>
+    </TooltipProvider>
   )
 }
 

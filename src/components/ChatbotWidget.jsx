@@ -4,27 +4,72 @@ import { useApp } from '../context/AppContext';
 function ChatbotWidget() {
   const { negocioActivo } = useApp();
   const inicializado = useRef(false);
+  const scriptsLoaded = useRef(false);
 
-  // Ocultar burbuja original de Botpress mientras este widget está activo
+  // Cargar scripts de Botpress dinámicamente solo cuando el componente se monta
   useEffect(() => {
-    const style = document.createElement('style');
-    style.id = 'bp-hide-fab';
-    style.textContent = `
-      #bp-web-widget,
-      #bp-web-widget-container,
-      [id^="bp-web-widget"],
-      [class*="bpFab"],
-      [class*="bp-fab"],
-      [class*="webchat-fab"],
-      [class*="Fab"],
-      iframe[id^="bp-"] {
-        opacity: 0 !important;
-        pointer-events: none !important;
-        transition: none !important;
-      }
-    `;
-    document.head.appendChild(style);
+    if (scriptsLoaded.current) return;
+
+    console.log('🤖 Cargando scripts de Botpress...');
+
+    const script1 = document.createElement('script');
+    script1.src = 'https://cdn.botpress.cloud/webchat/v3.6/inject.js';
+    script1.async = true;
+    
+    script1.onload = () => {
+      console.log('✅ Script de Botpress inject.js cargado');
+      
+      // Cargar el segundo script después del primero
+      const script2 = document.createElement('script');
+      script2.src = 'https://files.bpcontent.cloud/2026/06/29/21/20260629215347-AM6D0IHR.js';
+      script2.defer = true;
+      
+      script2.onload = () => {
+        console.log('✅ Script de configuración de Botpress cargado');
+      };
+      
+      script2.onerror = () => {
+        console.error('❌ Error al cargar el script de configuración de Botpress');
+      };
+      
+      document.body.appendChild(script2);
+    };
+
+    script1.onerror = () => {
+      console.error('❌ Error al cargar inject.js de Botpress');
+    };
+
+    document.body.appendChild(script1);
+    scriptsLoaded.current = true;
+
+    // No removemos los scripts al desmontar para evitar recargas innecesarias
+  }, []);
+
+  // Ocultar burbuja original de Botpress después de un delay
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const style = document.createElement('style');
+      style.id = 'bp-hide-fab';
+      style.textContent = `
+        #bp-web-widget,
+        #bp-web-widget-container,
+        [id^="bp-web-widget"],
+        [class*="bpFab"],
+        [class*="bp-fab"],
+        [class*="webchat-fab"],
+        [class*="Fab"],
+        iframe[id^="bp-"] {
+          opacity: 0 !important;
+          pointer-events: none !important;
+          transition: none !important;
+        }
+      `;
+      document.head.appendChild(style);
+      console.log('🎨 Estilos para ocultar widget original aplicados');
+    }, 1500); // Espera 1.5s para que el widget se cargue primero
+
     return () => {
+      clearTimeout(timer);
       document.getElementById('bp-hide-fab')?.remove();
     };
   }, []);

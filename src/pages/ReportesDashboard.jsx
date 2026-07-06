@@ -2,18 +2,20 @@ import { useMemo } from 'react'
 import { motion } from 'motion/react'
 import {
   BarChart3, FileDown, FileSpreadsheet, Package, DollarSign,
-  TrendingUp, Archive, AlertTriangle, Download, FileText
+  TrendingUp, Archive, AlertTriangle, Download
 } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, AreaChart, Area
 } from 'recharts'
-import { PageLayout } from './PageLayout'
-import { AuroraCard, AuroraStatCard } from './ui/aurora-card'
-import { Badge } from './ui/badge'
-import { Button } from './ui/button'
+import { PageLayout } from '../components/PageLayout'
+import { AuroraCard, AuroraStatCard } from '../components/ui/aurora-card'
+import { Badge } from '../components/ui/badge'
+import { Button } from '../components/ui/button'
 import { toast } from 'sonner'
 import { useApp } from '../context/AppContext'
+import { useStockStats } from '../hooks/useStockStats'
+import { useErrorHandler } from '../hooks/useErrorHandler'
 
 const CHART_COLORS = ['#06b6d4', '#10b981', '#8b5cf6', '#f59e0b', '#ec4899', '#3b82f6']
 
@@ -51,13 +53,8 @@ const ExportButton = ({ icon: Icon, label, format, onClick }) => (
 
 const ReportesDashboard = () => {
   const { productos = [] } = useApp()
-  const stats = useMemo(() => {
-    const totalStock = productos.reduce((s, p) => s + (p.stock || 0), 0)
-    const totalValue = productos.reduce((s, p) => s + ((p.precio || 0) * (p.stock || 0)), 0)
-    const lowStock = productos.filter(p => p.stock <= 5).length
-    const avgPrice = productos.length ? productos.reduce((s, p) => s + (p.precio || 0), 0) / productos.length : 0
-    return { totalStock, totalValue, lowStock, avgPrice }
-  }, [productos])
+  const stats = useStockStats(productos) // Hook compartido
+  const { handleError } = useErrorHandler()
 
   const stockChart = useMemo(() =>
     [...productos]
@@ -76,7 +73,7 @@ const ReportesDashboard = () => {
   )
 
   const trendData = useMemo(() => {
-    const base = stats.totalValue || 1000
+    const base = stats.valorTotalInventario || 1000
     return [
       { mes: 'Ene', valor: base * 0.7 },
       { mes: 'Feb', valor: base * 0.75 },
@@ -85,16 +82,20 @@ const ReportesDashboard = () => {
       { mes: 'May', valor: base * 0.93 },
       { mes: 'Jun', valor: base },
     ]
-  }, [stats.totalValue])
+  }, [stats.valorTotalInventario])
 
   const handleExport = async (format) => {
     const { exportarCSV, exportarPDF, exportarExcel } = await import('../services/dashboardService')
     try {
-      if (format === 'pdf')   { exportarPDF();   toast.success('Descargando PDF...') }
-      else if (format === 'excel') { exportarExcel(); toast.success('Descargando Excel...') }
-      else                    { exportarCSV();   toast.success('Descargando CSV...') }
+      if (format === 'pdf')        { exportarPDF();   toast.success('Descargando reporte PDF...') }
+      else if (format === 'excel') { exportarExcel(); toast.success('Descargando reporte Excel...') }
+      else                         { exportarCSV();   toast.success('Descargando reporte CSV...') }
     } catch (err) {
-      toast.error(err.message || `Error al descargar ${format.toUpperCase()}`)
+      handleError(err, {
+        operation: 'generar el reporte',
+        forbiddenMsg: 'No tienes permiso para descargar reportes',
+        notFoundMsg: 'El reporte no está disponible en este momento',
+      })
     }
   }
 
@@ -115,10 +116,10 @@ const ReportesDashboard = () => {
       }
     >
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <AuroraStatCard icon={Package} label="Productos" value={productos.length} sub="en inventario" glow="cyan" delay={80} />
-        <AuroraStatCard icon={Archive} label="Stock Total" value={stats.totalStock.toLocaleString()} sub="unidades" glow="emerald" delay={160} />
-        <AuroraStatCard icon={DollarSign} label="Valor Inventario" value={`$${stats.totalValue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`} sub="valor actual" glow="violet" delay={240} />
-        <AuroraStatCard icon={AlertTriangle} label="Alertas Stock" value={stats.lowStock} sub="productos críticos" glow="amber" delay={320} trend={stats.lowStock > 0 ? 'Atención' : undefined} />
+        <AuroraStatCard icon={Package} label="Productos" value={stats.totalProductos ?? 0} sub="en inventario" glow="cyan" delay={80} />
+        <AuroraStatCard icon={Archive} label="Stock Total" value={(stats.totalStock ?? 0).toLocaleString()} sub="unidades" glow="emerald" delay={160} />
+        <AuroraStatCard icon={DollarSign} label="Valor Inventario" value={`$${(stats.valorTotalInventario ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`} sub="valor actual" glow="violet" delay={240} />
+        <AuroraStatCard icon={AlertTriangle} label="Alertas Stock" value={stats.productosStockCritico ?? 0} sub="productos críticos" glow="amber" delay={320} trend={(stats.productosStockCritico ?? 0) > 0 ? 'Atención' : undefined} />
       </div>
 
       <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -194,7 +195,12 @@ const ReportesDashboard = () => {
             <div className="p-6">
               <div className="mb-4">
                 <h2 className="font-heading text-lg font-bold text-foreground">Tendencia del Inventario</h2>
-                <p className="text-sm text-muted-foreground">Evolución estimada del valor total (últimos 6 meses)</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">Evolución estimada del valor total (últimos 6 meses)</p>
+                  <Badge variant="outline" className="border-amber-500/20 bg-amber-500/5 text-amber-600 dark:text-amber-400 text-[10px]">
+                    Proyección simulada
+                  </Badge>
+                </div>
               </div>
               <ResponsiveContainer width="100%" height={220}>
                 <AreaChart data={trendData}>
