@@ -234,7 +234,7 @@ const Dashboard = () => {
                     </span>
                   </div>
                   <h1 className="gsap-hero-title font-heading text-3xl font-bold leading-tight tracking-tight text-white lg:text-4xl">
-                    {greet()}, Admin
+                    {greet()}, 
                     <span className="mt-1 block bg-gradient-to-r from-white/90 via-white/60 to-white/35 bg-clip-text text-transparent">
                       Sistema de Inventario
                     </span>

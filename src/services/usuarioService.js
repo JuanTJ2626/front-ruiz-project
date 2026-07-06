@@ -30,3 +30,9 @@ export const eliminarUsuario = (id) =>
 /** Crear empleado (usa /auth/register con negocioId y rol) — solo ADMIN */
 export const crearEmpleado = (datos) =>
   fetchApi('/auth/register', { method: 'POST', body: JSON.stringify(datos) });
+
+/** Asignar negocio a un usuario — solo ADMIN */
+export const asignarNegocio = (usuarioId, negocioId) =>
+  fetchApi(`/usuarios/${usuarioId}/negocio?negocioId=${negocioId}`, { method: 'PUT' });
+
+

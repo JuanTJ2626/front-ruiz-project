@@ -113,7 +113,7 @@ const Login = ({ onLogin }) => {
         {/* Logo */}
         <div className="gsap-stagger mb-6 flex items-center justify-center opacity-90 drop-shadow-[0_4px_6px_rgba(0,0,0,0.05)]">
           <span className="font-heading text-[1.1rem] font-bold tracking-[0.15em] whitespace-nowrap bg-gradient-to-br from-teal-600 to-cyan-500 bg-clip-text text-transparent">
-            INVENTARIO
+            INVENT-PRO
           </span>
         </div>
 

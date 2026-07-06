@@ -55,7 +55,7 @@ const estadoPedidoStyle = {
   CANCELADO: 'border-red-500/30 bg-red-500/10 text-red-400',
 }
 
-const PedidoRow = ({ pedido, index, onCambiarEstado }) => (
+const PedidoRow = ({ pedido, index, onCambiarEstado, isAdmin }) => (
   <motion.div
     initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }}
     transition={{ delay: 0.2 + index * 0.05 }}
@@ -251,7 +251,7 @@ const ProveedoresDashboard = () => {
                 ) : (
                   <div className="flex flex-col gap-2">
                     {pedidos.filter(p => ['PENDIENTE','ENVIADO'].includes(p.estado)).map((p, i) => (
-                      <PedidoRow key={p.id} pedido={p} index={i} onCambiarEstado={handleCambiarEstado} />
+                      <PedidoRow key={p.id} pedido={p} index={i} onCambiarEstado={handleCambiarEstado} isAdmin={isAdmin} />
                     ))}
                   </div>
                 )}

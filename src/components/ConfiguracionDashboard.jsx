@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'motion/react'
-import { Settings, Building2, Shield, User, Save, Check, Loader2,
-  Moon, Layers, Upload, Users, Plus, Trash2, KeyRound, UserCheck, UserX } from 'lucide-react'
+import { Building2, Shield, User, Save, Check, Loader2,
+  Moon, Layers, Upload, Users, Plus, Trash2, KeyRound, UserCheck, UserX, Store } from 'lucide-react'
 import { PageLayout } from './PageLayout'
 import { AuroraCard, AuroraStatCard } from './ui/aurora-card'
 import { Badge } from './ui/badge'
@@ -15,14 +15,14 @@ import { toast } from 'sonner'
 import { cn } from '#/lib/utils'
 import { getNegociosUsuario, actualizarNegocio, crearNegocio } from '../services/negocioService'
 import { getUsername, getRol, getNegocioId } from '../services/config'
-import { getUsuarios, crearEmpleado, cambiarRol, cambiarEstadoUsuario, eliminarUsuario } from '../services/usuarioService'
+import { getUsuarios, crearEmpleado, cambiarRol, cambiarEstadoUsuario, eliminarUsuario, asignarNegocio } from '../services/usuarioService'
 import { subirLogoNegocio } from '../services/uploadService'
 import { useRol } from '../hooks/useRol'
 import { useApp } from '../context/AppContext'
 
 const ConfiguracionDashboard = () => {
   const { isAdmin } = useRol()
-  const { cambiarNegocio, handleCrearNegocio, recargar } = useApp()
+  const { cambiarNegocio, handleCrearNegocio, recargar, negocioActivo: negocioActivoGlobal } = useApp()
   const username = getUsername() || 'Usuario'
   const rol      = getRol()      || 'ADMIN'
 
@@ -44,6 +44,16 @@ const ConfiguracionDashboard = () => {
   const [deleteTarget, setDeleteTarget]   = useState(null)
   const [formUser, setFormUser]           = useState({ username: '', email: '', password: '', nombre: '', rol: 'EMPLEADO' })
 
+  // Asignar negocio a usuario
+  const [assignTarget, setAssignTarget]   = useState(null) // usuario al que se le asigna
+  const [assignNegocioId, setAssignNegocioId] = useState('')
+  const [savingAssign, setSavingAssign]   = useState(false)
+
+  // Sincronizar negocio activo local cuando cambia el global (ej. desde el sidebar)
+  useEffect(() => {
+    if (negocioActivoGlobal) setNegocioAct(negocioActivoGlobal)
+  }, [negocioActivoGlobal])
+
   const cargar = useCallback(async () => {
     try {
       const data = await getNegociosUsuario()
@@ -55,10 +65,15 @@ const ConfiguracionDashboard = () => {
     if (isAdmin) {
       try {
         const data = await getUsuarios()
+        console.log('Usuarios recibidos:', data)
+        console.log('negocioId en localStorage:', getNegocioId())
         setUsuarios(Array.isArray(data) ? data : [])
-      } catch { /* silencioso */ }
+      } catch (err) {
+        console.error('Error al cargar usuarios:', err)
+        toast.error('No se pudieron cargar los usuarios: ' + (err.message || 'Error desconocido'))
+      }
     }
-  }, [negocioActivo, isAdmin])
+  }, [negocioActivo, negocioActivoGlobal, isAdmin])
 
   useEffect(() => { cargar() }, [cargar])
 
@@ -125,6 +140,20 @@ const ConfiguracionDashboard = () => {
       toast.success('Usuario eliminado')
       setDeleteTarget(null); cargar()
     } catch (err) { toast.error(err.message || 'Error al eliminar') }
+  }
+
+  const handleAsignarNegocio = async (e) => {
+    e.preventDefault()
+    if (!assignTarget || !assignNegocioId) return
+    setSavingAssign(true)
+    try {
+      await asignarNegocio(assignTarget.id, Number(assignNegocioId))
+      toast.success(`Negocio asignado a ${assignTarget.username}`)
+      setAssignTarget(null)
+      setAssignNegocioId('')
+      cargar()
+    } catch (err) { toast.error(err.message || 'Error al asignar negocio') }
+    finally { setSavingAssign(false) }
   }
 
   const handleCrearNegocioLocal = async (e) => {
@@ -255,6 +284,11 @@ const ConfiguracionDashboard = () => {
                         <p className="text-xs text-muted-foreground">{u.email}</p>
                       </div>
                       <div className="flex shrink-0 items-center gap-1">
+                        {/* Asignar negocio */}
+                        <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg" title="Asignar negocio"
+                          onClick={() => { setAssignTarget(u); setAssignNegocioId('') }}>
+                          <Store size={14} />
+                        </Button>
                         {/* Cambiar rol */}
                         <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg" title={`Cambiar a ${u.rol === 'ADMIN' ? 'EMPLEADO' : 'ADMIN'}`}
                           onClick={() => handleCambiarRol(u)}>
@@ -388,8 +422,42 @@ const ConfiguracionDashboard = () => {
       </SheetContent>
     </Sheet>
 
-    {/* Dialog: confirmar eliminación */}
-    <Dialog open={!!deleteTarget} onOpenChange={open => !open && setDeleteTarget(null)}>
+    {/* Sheet: asignar negocio a usuario */}
+    <Sheet open={!!assignTarget} onOpenChange={open => !open && setAssignTarget(null)}>
+      <SheetContent side="right" className="flex w-[400px] max-w-full flex-col gap-0 border-l p-0">
+        <SheetHeader className="shrink-0 border-b bg-muted/20 px-8 py-6">
+          <SheetTitle className="text-xl font-bold">Asignar Negocio</SheetTitle>
+          <SheetDescription>
+            Elige el negocio para <span className="font-semibold text-foreground">{assignTarget?.username}</span>.
+          </SheetDescription>
+        </SheetHeader>
+        <form onSubmit={handleAsignarNegocio} className="flex flex-1 flex-col gap-5 px-8 py-6">
+          <div className="space-y-2">
+            <Label>Negocio *</Label>
+            <select
+              value={assignNegocioId}
+              onChange={e => setAssignNegocioId(e.target.value)}
+              required
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-cyan-500/50"
+            >
+              <option value="">Selecciona un negocio...</option>
+              {negocios.map(n => (
+                <option key={n.id} value={n.id} className="bg-background">{n.nombre}</option>
+              ))}
+            </select>
+          </div>
+        </form>
+        <div className="flex shrink-0 justify-end gap-3 border-t bg-muted/20 px-8 py-5">
+          <Button variant="outline" onClick={() => setAssignTarget(null)} className="rounded-xl">Cancelar</Button>
+          <Button onClick={handleAsignarNegocio} disabled={savingAssign || !assignNegocioId} className="gap-2 rounded-xl">
+            {savingAssign ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+            {savingAssign ? 'Asignando...' : 'Asignar'}
+          </Button>
+        </div>
+      </SheetContent>
+    </Sheet>
+
+    {/* Dialog: confirmar eliminación */}    <Dialog open={!!deleteTarget} onOpenChange={open => !open && setDeleteTarget(null)}>
       <DialogContent className="max-w-sm rounded-[24px] p-6">
         <DialogHeader>
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
