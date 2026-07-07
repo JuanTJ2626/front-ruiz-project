@@ -38,16 +38,31 @@ export function AppProvider({ children, isAuthenticated }) {
     if (!isAuthenticated) return;
     try {
       const data = await getNegociosUsuario();
-      setNegocios(Array.isArray(data) ? data : []);
+      const lista = Array.isArray(data) ? data : [];
+      setNegocios(lista);
+
+      // Fallback: si el backend no devolvió negocioId en el login, tomar el primero
+      const negocioGuardado = getNegocioId();
+      if ((!negocioGuardado || negocioGuardado === 'null') && lista.length > 0) {
+        const primero = lista[0];
+        localStorage.setItem('negocioId', String(primero.id));
+        setNegocioActivo(primero.id);
+      }
     } catch { /* silencioso */ }
   }, [isAuthenticated]);
 
-  /* Al autenticarse, carga todo */
+  /* Al autenticarse, carga negocios primero, luego datos del negocio activo */
   useEffect(() => {
-    if (isAuthenticated) {
+    if (!isAuthenticated) return;
+
+    const inicializar = async () => {
+      // 1. Cargar negocios y asignar el activo si falta
+      await cargarNegocios();
+      // 2. Ahora sí hay negocioId en localStorage — cargar datos
       recargar();
-      cargarNegocios();
-    }
+    };
+
+    inicializar();
   }, [isAuthenticated, recargar, cargarNegocios]);
 
   /* ── Cambiar de negocio activo ── */

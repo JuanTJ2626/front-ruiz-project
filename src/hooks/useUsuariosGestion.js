@@ -2,19 +2,18 @@ import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import {
   getUsuarios,
-  crearEmpleado,
+  crearUsuario,
   cambiarRol,
   cambiarEstadoUsuario,
   eliminarUsuario,
   asignarNegocio,
+  quitarNegocio,
 } from '../services/usuarioService';
 import { useErrorHandler } from './useErrorHandler';
 
 /**
  * Hook para gestionar usuarios en ConfiguracionDashboard.
  * Encapsula toda la lógica de estado y operaciones CRUD de usuarios.
- * 
- * @returns {Object} Estado y funciones de gestión de usuarios
  */
 export function useUsuariosGestion() {
   const [usuarios, setUsuarios] = useState([]);
@@ -22,7 +21,7 @@ export function useUsuariosGestion() {
   const [savingUser, setSavingUser] = useState(false);
   const { handleError } = useErrorHandler();
 
-  // Carga inicial de usuarios
+  // Carga todos los usuarios (GET /api/usuarios)
   const cargarUsuarios = useCallback(async () => {
     try {
       setLoadingUsuarios(true);
@@ -43,8 +42,8 @@ export function useUsuariosGestion() {
     cargarUsuarios();
   }, [cargarUsuarios]);
 
-  // Crear nuevo usuario
-  const handleCrearUsuario = useCallback(async (formData) => {
+  // Crear usuario con negocioId incluido en el body (POST /api/auth/register)
+  const handleCrearUsuario = useCallback(async (formData, negocioId) => {
     if (!formData.username?.trim() || !formData.password?.trim()) {
       toast.error('Usuario y contraseña son obligatorios');
       return false;
@@ -53,15 +52,20 @@ export function useUsuariosGestion() {
       toast.error('La contraseña debe tener al menos 6 caracteres');
       return false;
     }
+    if (!negocioId) {
+      toast.error('No se pudo determinar el negocio activo');
+      return false;
+    }
 
     setSavingUser(true);
     try {
-      await crearEmpleado({
-        username: formData.username.trim(),
-        password: formData.password,
-        email: formData.email || undefined,
-        nombre: formData.nombre || undefined,
-        rol: formData.rol || 'EMPLEADO',
+      await crearUsuario({
+        username:  formData.username.trim(),
+        password:  formData.password,
+        email:     formData.email   || undefined,
+        nombre:    formData.nombre  || undefined,
+        rol:       formData.rol     || 'EMPLEADO',
+        negocioId: Number(negocioId),
       });
       toast.success(`Usuario "${formData.username.trim()}" creado como ${formData.rol || 'EMPLEADO'}`);
       await cargarUsuarios();
@@ -78,7 +82,7 @@ export function useUsuariosGestion() {
     }
   }, [cargarUsuarios, handleError]);
 
-  // Cambiar rol de usuario
+  // Cambiar rol (PUT /api/usuarios/{id}/rol?rol=ADMIN)
   const handleCambiarRol = useCallback(async (usuario, nuevoRol) => {
     try {
       await cambiarRol(usuario.id, nuevoRol);
@@ -94,7 +98,7 @@ export function useUsuariosGestion() {
     }
   }, [cargarUsuarios, handleError]);
 
-  // Activar/Desactivar usuario
+  // Activar/Desactivar (PUT /api/usuarios/{id}/estado?activo=true)
   const handleToggleActivo = useCallback(async (usuario) => {
     try {
       await cambiarEstadoUsuario(usuario.id, !usuario.activo);
@@ -111,7 +115,7 @@ export function useUsuariosGestion() {
     }
   }, [cargarUsuarios, handleError]);
 
-  // Eliminar usuario
+  // Eliminar (DELETE /api/usuarios/{id})
   const handleEliminarUsuario = useCallback(async (usuario) => {
     try {
       await eliminarUsuario(usuario.id);
@@ -128,7 +132,7 @@ export function useUsuariosGestion() {
     }
   }, [cargarUsuarios, handleError]);
 
-  // Asignar negocio a usuario
+  // Asignar negocio (PUT /api/usuarios/{id}/negocio?negocioId=1)
   const handleAsignarNegocio = useCallback(async (usuarioId, negocioId, targetUsername) => {
     try {
       await asignarNegocio(usuarioId, negocioId);
@@ -145,6 +149,23 @@ export function useUsuariosGestion() {
     }
   }, [cargarUsuarios, handleError]);
 
+  // Quitar negocio (DELETE /api/usuarios/{id}/negocio)
+  const handleQuitarNegocio = useCallback(async (usuarioId, targetUsername) => {
+    try {
+      await quitarNegocio(usuarioId);
+      toast.success(`Negocio quitado de ${targetUsername}`);
+      await cargarUsuarios();
+      return true;
+    } catch (err) {
+      handleError(err, {
+        operation: 'quitar el negocio',
+        forbiddenMsg: 'No tienes permiso para quitar negocios',
+        notFoundMsg: 'El usuario no existe',
+      });
+      return false;
+    }
+  }, [cargarUsuarios, handleError]);
+
   return {
     usuarios,
     loadingUsuarios,
@@ -155,5 +176,6 @@ export function useUsuariosGestion() {
     handleToggleActivo,
     handleEliminarUsuario,
     handleAsignarNegocio,
+    handleQuitarNegocio,
   };
 }

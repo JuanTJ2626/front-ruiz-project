@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'motion/react'
 import { Building2, Shield, User, Save, Check, Loader2,
-  Layers, Upload, Users, Plus, Trash2, KeyRound, Store } from 'lucide-react'
+  Layers, Upload, Users, Plus, Trash2, KeyRound, Store, X } from 'lucide-react'
 import { PageLayout } from '../components/PageLayout'
 import { AuroraCard, AuroraStatCard } from '../components/ui/aurora-card'
 import { Badge } from '../components/ui/badge'
@@ -41,6 +41,7 @@ const ConfiguracionDashboard = () => {
     handleToggleActivo,
     handleEliminarUsuario,
     handleAsignarNegocio: asignarNegocioUsuario,
+    handleQuitarNegocio: quitarNegocioUsuario,
   } = useUsuariosGestion()
 
   const [negocios, setNegocios]           = useState([])
@@ -94,7 +95,8 @@ const ConfiguracionDashboard = () => {
 
   const handleCrearEmpleado = async (e) => {
     e.preventDefault()
-    const success = await handleCrearUsuario(formUser)
+    // Pasar el negocio activo del admin para asignárselo al empleado/admin nuevo
+    const success = await handleCrearUsuario(formUser, negocioActivo)
     if (success) {
       setFormUser({ username: '', email: '', password: '', nombre: '', rol: 'EMPLEADO' })
       setShowFormUser(false)
@@ -290,7 +292,19 @@ const ConfiguracionDashboard = () => {
                     </Button>
                   </div>
 
-                  {usuarios.length === 0 ? (
+                  {loadingUsuarios ? (
+                    <div className="flex flex-col gap-2">
+                      {[1,2,3].map(i => (
+                        <div key={i} className="flex items-center gap-4 rounded-xl border border-white/5 bg-white/[0.02] p-4">
+                          <div className="h-10 w-10 animate-pulse rounded-full bg-white/10" />
+                          <div className="flex-1 space-y-2">
+                            <div className="h-3 w-32 animate-pulse rounded bg-white/10" />
+                            <div className="h-2.5 w-48 animate-pulse rounded bg-white/5" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : usuarios.length === 0 ? (
                     <div className="flex flex-col items-center py-10 text-center">
                       <Users size={32} className="mb-3 text-muted-foreground/30" />
                       <p className="text-sm text-muted-foreground">No hay usuarios registrados</p>
@@ -309,7 +323,20 @@ const ConfiguracionDashboard = () => {
                                 u.rol === 'ADMIN' ? 'border-violet-500/30 bg-violet-500/10 text-violet-400' : 'border-cyan-500/30 bg-cyan-500/10 text-cyan-400'
                               )}>{u.rol}</Badge>
                             </div>
-                            <p className="text-xs text-muted-foreground">{u.email}</p>
+                            {/* Negocio asignado — solo relevante para EMPLEADOS */}
+                            {u.rol === 'EMPLEADO' && (
+                              <div className="mt-0.5 flex items-center gap-1.5">
+                                {u.negocioNombre ? (
+                                  <span className="flex items-center gap-1 text-xs">
+                                    <Building2 size={10} className="text-emerald-400" />
+                                    <span className="text-emerald-400/80">{u.negocioNombre}</span>
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-amber-500/70">Sin negocio asignado</span>
+                                )}
+                              </div>
+                            )}
+                            {u.email && <p className="text-[11px] text-muted-foreground/60">{u.email}</p>}
                           </div>
                           <div className="flex shrink-0 items-center gap-3">
                             {/* Switch activar/desactivar */}
@@ -326,16 +353,33 @@ const ConfiguracionDashboard = () => {
                               <TooltipContent>{u.activo !== false ? 'Desactivar usuario' : 'Activar usuario'}</TooltipContent>
                             </Tooltip>
                             <Separator orientation="vertical" className="h-5 opacity-30" />
-                            {/* Asignar negocio */}
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg"
-                                  onClick={() => { setAssignTarget(u); setAssignNegocioId('') }}>
-                                  <Store size={14} />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Asignar negocio</TooltipContent>
-                            </Tooltip>
+                            {/* Asignar / quitar negocio — solo para EMPLEADOS */}
+                            {u.rol === 'EMPLEADO' && (
+                              <>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg"
+                                      onClick={() => { setAssignTarget(u); setAssignNegocioId('') }}>
+                                      <Store size={14} />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>{u.negocioId ? 'Cambiar negocio' : 'Asignar negocio'}</TooltipContent>
+                                </Tooltip>
+                                {u.negocioId && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button size="icon" variant="ghost"
+                                        className="h-8 w-8 rounded-lg hover:bg-amber-500/10 hover:text-amber-500"
+                                        onClick={() => quitarNegocioUsuario(u.id, u.username)}>
+                                        <X size={14} />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Quitar negocio</TooltipContent>
+                                  </Tooltip>
+                                )}
+                                <Separator orientation="vertical" className="h-5 opacity-30" />
+                              </>
+                            )}
                             {/* Cambiar rol */}
                             <Tooltip>
                               <TooltipTrigger asChild>

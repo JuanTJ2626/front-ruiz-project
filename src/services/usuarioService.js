@@ -1,14 +1,15 @@
-import { fetchApi, getNegocioId } from './config';
+import { fetchApi } from './config';
 
 /* ── Usuarios ─────────────────────────────────────────────── */
 
-/** Listar usuarios del negocio — solo ADMIN */
-export const getUsuarios = () => {
-  const negocioId = getNegocioId();
-  return fetchApi(`/usuarios/negocio/${negocioId}`);
-};
+/**
+ * Listar TODOS los usuarios — solo ADMIN
+ * GET /api/usuarios
+ * Devuelve: [{ id, username, email, nombre, rol, activo, negocioId, negocioNombre }]
+ */
+export const getUsuarios = () => fetchApi('/usuarios');
 
-/** Ver un usuario */
+/** Ver un usuario por ID */
 export const getUsuario = (id) => fetchApi(`/usuarios/${id}`);
 
 /** Editar perfil */
@@ -27,12 +28,24 @@ export const cambiarEstadoUsuario = (id, activo) =>
 export const eliminarUsuario = (id) =>
   fetchApi(`/usuarios/${id}`, { method: 'DELETE' });
 
-/** Crear empleado (usa /auth/register con negocioId y rol) — solo ADMIN */
-export const crearEmpleado = (datos) =>
+/**
+ * Crear usuario (empleado o admin) — solo ADMIN
+ * POST /api/auth/register
+ * Body: { username, password, email?, nombre?, rol, negocioId }
+ */
+export const crearUsuario = (datos) =>
   fetchApi('/auth/register', { method: 'POST', body: JSON.stringify(datos) });
 
-/** Asignar negocio a un usuario — solo ADMIN */
+/**
+ * Asignar negocio a un usuario — solo ADMIN
+ * PUT /api/usuarios/{id}/negocio?negocioId=1
+ */
 export const asignarNegocio = (usuarioId, negocioId) =>
   fetchApi(`/usuarios/${usuarioId}/negocio?negocioId=${negocioId}`, { method: 'PUT' });
 
-
+/**
+ * Quitar negocio de un usuario — solo ADMIN
+ * DELETE /api/usuarios/{id}/negocio
+ */
+export const quitarNegocio = (usuarioId) =>
+  fetchApi(`/usuarios/${usuarioId}/negocio`, { method: 'DELETE' });
