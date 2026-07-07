@@ -1,7 +1,8 @@
 import { useMemo, useState, useEffect, useCallback } from 'react'
 import { motion } from 'motion/react'
 import { Truck, Plus, Mail, Phone, Search, Package, Clock, ShoppingCart,
-  CheckCircle2, X, Check, Loader2, User, Send, Pencil, History, ChevronDown, ChevronUp } from 'lucide-react'
+  CheckCircle2, X, Check, Loader2, User, Send, Pencil, History, ChevronDown, ChevronUp,
+  CalendarDays, XCircle, AlertTriangle, Info, Lock, MailCheck, MailX, Trash2 } from 'lucide-react'
 import { PageLayout } from '../components/PageLayout'
 import { AuroraCard, AuroraStatCard } from '../components/ui/aurora-card'
 import { Badge } from '../components/ui/badge'
@@ -11,18 +12,19 @@ import { Label } from '../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { Separator } from '../components/ui/separator'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '../components/ui/sheet'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../components/ui/dialog'
 import { Switch } from '../components/ui/switch'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip'
 import { toast } from 'sonner'
 import { cn } from '#/lib/utils'
-import { getProveedores, crearProveedor, actualizarProveedor } from '../services/proveedorService'
-import { getPedidos, crearPedido, cambiarEstadoPedido, actualizarPedido, reenviarEmail } from '../services/pedidoService'
+import { getProveedores, crearProveedor, actualizarProveedor, eliminarProveedor } from '../services/proveedorService'
+import { getPedidos, crearPedido, cambiarEstadoPedido, actualizarPedido, eliminarPedido, reenviarEmail } from '../services/pedidoService'
 import { getUsuarioId, getNegocioId } from '../services/config'
 import { useRol } from '../hooks/useRol'
 import { useApp } from '../context/AppContext'
 
 /* ── Fila de proveedor ─────────────────────────────────────── */
-const ProveedorRow = ({ proveedor, index, pedidosPorProveedor, onEditar, isAdmin }) => {
+const ProveedorRow = ({ proveedor, index, pedidosPorProveedor, onEditar, onEliminar, isAdmin }) => {
   const pendientes = pedidosPorProveedor[proveedor.id] ?? 0
   return (
     <motion.div
@@ -49,19 +51,28 @@ const ProveedorRow = ({ proveedor, index, pedidosPorProveedor, onEditar, isAdmin
         </div>
       </div>
       {isAdmin && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button 
-              size="sm" 
-              variant="outline"
-              className="shrink-0 h-8 rounded-lg text-xs gap-1 border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20"
-              onClick={() => onEditar(proveedor)}
-            >
-              <Pencil size={12} />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Editar proveedor</TooltipContent>
-        </Tooltip>
+        <div className="flex shrink-0 gap-1.5">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="sm" variant="outline"
+                className="h-8 rounded-lg border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20"
+                onClick={() => onEditar(proveedor)}>
+                <Pencil size={12} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Editar proveedor</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="sm" variant="outline"
+                className="h-8 rounded-lg border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                onClick={() => onEliminar(proveedor)}>
+                <Trash2 size={12} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Eliminar proveedor</TooltipContent>
+          </Tooltip>
+        </div>
       )}
     </motion.div>
   )
@@ -75,7 +86,7 @@ const estadoPedidoStyle = {
   CANCELADO: 'border-red-500/30 bg-red-500/10 text-red-400',
 }
 
-const PedidoRow = ({ pedido, index, onCambiarEstado, onReenviarEmail, onEditar, isAdmin }) => {
+const PedidoRow = ({ pedido, index, onCambiarEstado, onReenviarEmail, onEditar, onEliminar, isAdmin }) => {
   const [enviando, setEnviando] = useState(false)
   
   const handleReenviar = async () => {
@@ -87,7 +98,6 @@ const PedidoRow = ({ pedido, index, onCambiarEstado, onReenviarEmail, onEditar, 
     }
   }
 
-  // Determinar si se puede editar
   const puedeEditar = pedido.estado === 'PENDIENTE' || pedido.estado === 'ENVIADO'
 
   return (
@@ -101,8 +111,12 @@ const PedidoRow = ({ pedido, index, onCambiarEstado, onReenviarEmail, onEditar, 
         <p className="text-xs text-muted-foreground">
           {pedido.proveedorNombre} · {pedido.cantidad} {pedido.cantidad === 1 ? 'unidad' : 'unidades'}
           {pedido.precioUnitario ? ` · $${Number(pedido.precioUnitario).toFixed(2)} c/u` : ''}
-          {pedido.productoNombre ? ` · 📦 ${pedido.productoNombre}` : ''}
         </p>
+        {pedido.productoNombre && (
+          <p className="flex items-center gap-1 text-xs text-muted-foreground/70 mt-0.5">
+            <Package size={10} /> {pedido.productoNombre}
+          </p>
+        )}
       </div>
       <Badge variant="outline" className={cn('shrink-0 text-[10px] font-bold', estadoPedidoStyle[pedido.estado] ?? '')}>
         {pedido.estado}
@@ -112,12 +126,9 @@ const PedidoRow = ({ pedido, index, onCambiarEstado, onReenviarEmail, onEditar, 
           {puedeEditar && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  className="shrink-0 h-8 rounded-lg text-xs gap-1 border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20"
-                  onClick={() => onEditar(pedido)}
-                >
+                <Button size="sm" variant="outline"
+                  className="shrink-0 h-8 rounded-lg border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20"
+                  onClick={() => onEditar(pedido)}>
                   <Pencil size={12} />
                 </Button>
               </TooltipTrigger>
@@ -126,17 +137,23 @@ const PedidoRow = ({ pedido, index, onCambiarEstado, onReenviarEmail, onEditar, 
           )}
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button 
-                size="sm" 
-                variant="outline"
-                className="shrink-0 h-8 rounded-lg text-xs gap-1 border-cyan-500/30 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20"
-                onClick={handleReenviar}
-                disabled={enviando}
-              >
+              <Button size="sm" variant="outline"
+                className="shrink-0 h-8 rounded-lg border-cyan-500/30 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20"
+                onClick={handleReenviar} disabled={enviando}>
                 {enviando ? <Loader2 size={12} className="animate-spin" /> : <Mail size={12} />}
               </Button>
             </TooltipTrigger>
             <TooltipContent>Reenviar email al proveedor</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="sm" variant="outline"
+                className="shrink-0 h-8 rounded-lg border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                onClick={() => onEliminar(pedido)}>
+                <Trash2 size={12} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Cancelar y eliminar pedido</TooltipContent>
           </Tooltip>
           <Button size="sm" className="shrink-0 h-8 rounded-lg text-xs gap-1 bg-emerald-600 hover:bg-emerald-700"
             onClick={() => onCambiarEstado(pedido.id, 'RECIBIDO')}>
@@ -221,7 +238,7 @@ const HistorialPedidos = ({ pedidos }) => {
                     <button
                       key={estado}
                       onClick={() => setFiltroEstado(estado)}
-                      className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+                      className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
                         filtroEstado === estado
                           ? estado === 'RECIBIDO'
                             ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
@@ -231,7 +248,14 @@ const HistorialPedidos = ({ pedidos }) => {
                           : 'bg-white/5 text-muted-foreground border border-white/10 hover:bg-white/10'
                       }`}
                     >
-                      {estado === 'TODOS' ? `Todos (${pedidos.length})` : estado === 'RECIBIDO' ? `✅ Recibidos (${pedidos.filter(p => p.estado === 'RECIBIDO').length})` : `❌ Cancelados (${pedidos.filter(p => p.estado === 'CANCELADO').length})`}
+                      {estado === 'TODOS' && <Package size={11} />}
+                      {estado === 'RECIBIDO' && <CheckCircle2 size={11} />}
+                      {estado === 'CANCELADO' && <XCircle size={11} />}
+                      {estado === 'TODOS'
+                        ? `Todos (${pedidos.length})`
+                        : estado === 'RECIBIDO'
+                        ? `Recibidos (${pedidos.filter(p => p.estado === 'RECIBIDO').length})`
+                        : `Cancelados (${pedidos.filter(p => p.estado === 'CANCELADO').length})`}
                     </button>
                   ))}
                 </div>
@@ -259,12 +283,16 @@ const HistorialPedidos = ({ pedidos }) => {
                         <p className="text-xs text-muted-foreground">
                           {p.proveedorNombre} · {p.cantidad} {p.cantidad === 1 ? 'unidad' : 'unidades'}
                           {p.precioUnitario ? ` · $${Number(p.precioUnitario).toFixed(2)} c/u` : ''}
-                          {p.productoNombre ? ` · 📦 ${p.productoNombre}` : ''}
                           {p.precioUnitario && p.cantidad ? ` · Total: $${(Number(p.precioUnitario) * p.cantidad).toFixed(2)}` : ''}
                         </p>
+                        {p.productoNombre && (
+                          <p className="flex items-center gap-1 text-xs text-muted-foreground/70 mt-0.5">
+                            <Package size={10} /> {p.productoNombre}
+                          </p>
+                        )}
                         {p.fechaEsperada && (
-                          <p className="text-xs text-muted-foreground/60 mt-0.5">
-                            📅 Esperado: {new Date(p.fechaEsperada).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          <p className="flex items-center gap-1 text-xs text-muted-foreground/60 mt-0.5">
+                            <CalendarDays size={10} /> Esperado: {new Date(p.fechaEsperada).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}
                           </p>
                         )}
                       </div>
@@ -276,7 +304,9 @@ const HistorialPedidos = ({ pedidos }) => {
                             : 'border-red-500/30 bg-red-500/10 text-red-400'
                         }`}
                       >
-                        {p.estado === 'RECIBIDO' ? '✅ RECIBIDO' : '❌ CANCELADO'}
+                        {p.estado === 'RECIBIDO'
+                          ? <span className="flex items-center gap-1"><CheckCircle2 size={10} /> RECIBIDO</span>
+                          : <span className="flex items-center gap-1"><XCircle size={10} /> CANCELADO</span>}
                       </Badge>
                     </motion.div>
                   ))}
@@ -301,8 +331,10 @@ const ProveedoresDashboard = () => {
   const [saving, setSaving]               = useState(false)
   const [formProv, setFormProv]           = useState({ nombre: '', contacto: '', email: '', telefono: '' })
   const [formPed, setFormPed]             = useState({ descripcion: '', cantidad: '', precioUnitario: '', fechaEsperada: '', notas: '', proveedorId: '', productoId: '', enviarEmail: true })
-  const [editandoPedido, setEditandoPedido] = useState(null) // null | pedido object
-  const [editandoProveedor, setEditandoProveedor] = useState(null) // null | proveedor object
+  const [editandoPedido, setEditandoPedido] = useState(null)
+  const [editandoProveedor, setEditandoProveedor] = useState(null)
+  const [confirmEliminar, setConfirmEliminar] = useState(null) // { tipo: 'proveedor'|'pedido', item }
+  const [eliminando, setEliminando] = useState(false)
 
   const { isAdmin } = useRol()
   const { productos = [] } = useApp()
@@ -506,6 +538,29 @@ const ProveedoresDashboard = () => {
     setFormProv({ nombre: '', contacto: '', email: '', telefono: '' })
   }
 
+  const handleConfirmarEliminar = async () => {
+    if (!confirmEliminar) return
+    setEliminando(true)
+    try {
+      if (confirmEliminar.tipo === 'proveedor') {
+        await eliminarProveedor(confirmEliminar.item.id)
+        toast.success(`Proveedor "${confirmEliminar.item.nombre}" eliminado`)
+      } else {
+        await eliminarPedido(confirmEliminar.item.id)
+        toast.success('Pedido eliminado correctamente')
+      }
+      setConfirmEliminar(null)
+      cargar()
+    } catch (err) {
+      const status = err?.response?.status
+      if (status === 403) toast.error('No tienes permiso para eliminar')
+      else if (status === 409) toast.error('No se puede eliminar: tiene pedidos asociados. Primero elimina los pedidos del proveedor')
+      else toast.error('No se pudo eliminar. Intenta de nuevo')
+    } finally {
+      setEliminando(false)
+    }
+  }
+
   return (
     <TooltipProvider>
       <PageLayout
@@ -568,7 +623,7 @@ const ProveedoresDashboard = () => {
                   </div>
                 ) : (
                   <div className="flex flex-col gap-2">
-                    {filtered.map((p, i) => <ProveedorRow key={p.id} proveedor={p} index={i} pedidosPorProveedor={pedidosPorProveedor} onEditar={handleEditarProveedor} isAdmin={isAdmin} />)}
+                    {filtered.map((p, i) => <ProveedorRow key={p.id} proveedor={p} index={i} pedidosPorProveedor={pedidosPorProveedor} onEditar={handleEditarProveedor} onEliminar={(prov) => setConfirmEliminar({ tipo: 'proveedor', item: prov })} isAdmin={isAdmin} />)}
                   </div>
                 )}
               </div>
@@ -598,7 +653,7 @@ const ProveedoresDashboard = () => {
                 ) : (
                   <div className="flex flex-col gap-2">
                     {pedidos.filter(p => ['PENDIENTE','ENVIADO'].includes(p.estado)).map((p, i) => (
-                      <PedidoRow key={p.id} pedido={p} index={i} onCambiarEstado={handleCambiarEstado} onReenviarEmail={handleReenviarEmail} onEditar={handleEditarPedido} isAdmin={isAdmin} />
+                      <PedidoRow key={p.id} pedido={p} index={i} onCambiarEstado={handleCambiarEstado} onReenviarEmail={handleReenviarEmail} onEditar={handleEditarPedido} onEliminar={(ped) => setConfirmEliminar({ tipo: 'pedido', item: ped })} isAdmin={isAdmin} />
                     ))}
                   </div>
                 )}
@@ -641,8 +696,8 @@ const ProveedoresDashboard = () => {
               <Input type="email" value={formProv.email} onChange={e => setFormProv({...formProv,email:e.target.value})} className="h-11 rounded-xl" placeholder="contacto@proveedor.com" />
               <p className="text-xs text-muted-foreground">
                 {formProv.email?.trim() 
-                  ? '✅ Este proveedor podrá recibir notificaciones por email de sus pedidos' 
-                  : '⚠️ Sin email configurado, no se podrán enviar notificaciones automáticas'}
+                  ? <span className="flex items-center gap-1 text-emerald-400"><MailCheck size={11} /> Este proveedor podrá recibir notificaciones por email de sus pedidos</span>
+                  : <span className="flex items-center gap-1 text-amber-400"><MailX size={11} /> Sin email configurado, no se podrán enviar notificaciones automáticas</span>}
               </p>
             </div>
             <div className="space-y-2">
@@ -690,7 +745,9 @@ const ProveedoresDashboard = () => {
                 </SelectContent>
               </Select>
               {editandoPedido && (
-                <p className="text-xs text-muted-foreground">🔒 El proveedor no se puede cambiar una vez creado el pedido</p>
+                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Lock size={11} /> El proveedor no se puede cambiar una vez creado el pedido
+                </p>
               )}
             </div>
 
@@ -794,13 +851,13 @@ const ProveedoresDashboard = () => {
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {formPed.enviarEmail ? (
-                      <span className="flex items-center gap-1">
-                        <Send size={11} className="text-emerald-400" />
-                        <span className="text-emerald-400">✓</span> Se enviará un email automático al proveedor con los detalles del pedido
+                      <span className="flex items-center gap-1 text-emerald-400">
+                        <Send size={11} />
+                        Se enviará un email automático al proveedor con los detalles del pedido
                       </span>
                     ) : (
                       <span className="flex items-center gap-1 text-amber-400">
-                        ⚠️ Solo se registrará el pedido sin notificación
+                        <AlertTriangle size={11} /> Solo se registrará el pedido sin notificación
                       </span>
                     )}
                   </p>
@@ -810,8 +867,8 @@ const ProveedoresDashboard = () => {
 
             {editandoPedido?.estado === 'ENVIADO' && (
               <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
-                <p className="text-xs text-amber-400">
-                  ℹ️ Este pedido ya fue enviado. Solo puedes modificar la fecha esperada y las notas.
+                <p className="flex items-center gap-1.5 text-xs text-amber-400">
+                  <Info size={13} /> Este pedido ya fue enviado. Solo puedes modificar la fecha esperada y las notas.
                 </p>
               </div>
             )}
@@ -825,6 +882,50 @@ const ProveedoresDashboard = () => {
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Dialog: confirmar eliminación */}
+      <Dialog open={!!confirmEliminar} onOpenChange={(open) => !open && setConfirmEliminar(null)}>
+        <DialogContent className="max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-400">
+              <Trash2 size={18} />
+              {confirmEliminar?.tipo === 'proveedor' ? 'Eliminar Proveedor' : 'Eliminar Pedido'}
+            </DialogTitle>
+            <DialogDescription className="pt-1">
+              {confirmEliminar?.tipo === 'proveedor' ? (
+                <>
+                  Estás a punto de eliminar al proveedor{' '}
+                  <span className="font-semibold text-foreground">"{confirmEliminar?.item?.nombre}"</span>.
+                  {(confirmEliminar?.item?.id && pedidosPorProveedor[confirmEliminar.item.id] > 0) && (
+                    <span className="mt-2 flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 p-2 text-amber-400">
+                      <AlertTriangle size={13} /> Este proveedor tiene pedidos pendientes. Elimínalo solo si estás seguro.
+                    </span>
+                  )}
+                </>
+              ) : (
+                <>
+                  Estás a punto de eliminar el pedido{' '}
+                  <span className="font-semibold text-foreground">"{confirmEliminar?.item?.descripcion}"</span>.
+                  Esta acción no se puede deshacer.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 pt-2">
+            <Button variant="outline" onClick={() => setConfirmEliminar(null)} className="rounded-xl" disabled={eliminando}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleConfirmarEliminar}
+              disabled={eliminando}
+              className="gap-2 rounded-xl bg-red-600 hover:bg-red-700 text-white"
+            >
+              {eliminando ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+              {eliminando ? 'Eliminando...' : 'Sí, eliminar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </TooltipProvider>
   )
 }

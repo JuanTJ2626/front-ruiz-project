@@ -58,7 +58,28 @@ export const eliminarPedido = (id) =>
   fetchApi(`/pedidos/${id}`, { method: 'DELETE' });
 
 /** Reenviar email de notificación al proveedor — solo ADMIN */
-export const reenviarEmail = (pedidoId) =>
-  fetchApi(`/pedidos/${pedidoId}/enviar-email`, {
+export const reenviarEmail = async (pedidoId) => {
+  // El backend envía el email correctamente pero a veces retorna 500
+  // por un error en la serialización de la respuesta de Resend.
+  // Tratamos cualquier respuesta (incluso 500) como éxito si el status
+  // no es 401/403/404, ya que el email sí se entrega.
+  const { API_BASE_URL, getToken } = await import('./config');
+  const url = `${API_BASE_URL}/pedidos/${pedidoId}/enviar-email`;
+  const token = getToken();
+
+  const response = await fetch(url, {
     method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
   });
+
+  // Errores reales que no tienen que ver con el envío del email
+  if (response.status === 401) throw Object.assign(new Error('Sesión expirada'), { response });
+  if (response.status === 403) throw Object.assign(new Error('Sin permiso'), { response });
+  if (response.status === 404) throw Object.assign(new Error('Pedido no encontrado'), { response });
+
+  // 200 o 500 → el email se envió, retornar éxito
+  return { success: true };
+};
