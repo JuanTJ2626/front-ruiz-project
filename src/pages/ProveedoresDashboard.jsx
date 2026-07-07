@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect, useCallback } from 'react'
 import { motion } from 'motion/react'
 import { Truck, Plus, Mail, Phone, Search, Package, Clock, ShoppingCart,
-  CheckCircle2, X, Check, Loader2, User } from 'lucide-react'
+  CheckCircle2, X, Check, Loader2, User, Send, Pencil, History, ChevronDown, ChevronUp } from 'lucide-react'
 import { PageLayout } from '../components/PageLayout'
 import { AuroraCard, AuroraStatCard } from '../components/ui/aurora-card'
 import { Badge } from '../components/ui/badge'
@@ -11,17 +11,18 @@ import { Label } from '../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { Separator } from '../components/ui/separator'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '../components/ui/sheet'
+import { Switch } from '../components/ui/switch'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip'
 import { toast } from 'sonner'
 import { cn } from '#/lib/utils'
-import { getProveedores, crearProveedor } from '../services/proveedorService'
-import { getPedidos, crearPedido, cambiarEstadoPedido } from '../services/pedidoService'
-import { getUsuarioId } from '../services/config'
+import { getProveedores, crearProveedor, actualizarProveedor } from '../services/proveedorService'
+import { getPedidos, crearPedido, cambiarEstadoPedido, actualizarPedido, reenviarEmail } from '../services/pedidoService'
+import { getUsuarioId, getNegocioId } from '../services/config'
 import { useRol } from '../hooks/useRol'
 import { useApp } from '../context/AppContext'
 
 /* ── Fila de proveedor ─────────────────────────────────────── */
-const ProveedorRow = ({ proveedor, index, pedidosPorProveedor }) => {
+const ProveedorRow = ({ proveedor, index, pedidosPorProveedor, onEditar, isAdmin }) => {
   const pendientes = pedidosPorProveedor[proveedor.id] ?? 0
   return (
     <motion.div
@@ -47,6 +48,21 @@ const ProveedorRow = ({ proveedor, index, pedidosPorProveedor }) => {
           {proveedor.telefono  && <span className="flex items-center gap-1"><Phone size={11} /> {proveedor.telefono}</span>}
         </div>
       </div>
+      {isAdmin && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button 
+              size="sm" 
+              variant="outline"
+              className="shrink-0 h-8 rounded-lg text-xs gap-1 border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20"
+              onClick={() => onEditar(proveedor)}
+            >
+              <Pencil size={12} />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Editar proveedor</TooltipContent>
+        </Tooltip>
+      )}
     </motion.div>
   )
 }
@@ -59,31 +75,220 @@ const estadoPedidoStyle = {
   CANCELADO: 'border-red-500/30 bg-red-500/10 text-red-400',
 }
 
-const PedidoRow = ({ pedido, index, onCambiarEstado, isAdmin }) => (
-  <motion.div
-    initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }}
-    transition={{ delay: 0.2 + index * 0.05 }}
-    className="flex items-center gap-4 rounded-xl border border-white/5 bg-white/[0.02] p-4 transition-all hover:border-white/10 hover:bg-white/[0.04]"
-  >
-    <div className="min-w-0 flex-1">
-      <p className="truncate text-sm font-bold text-foreground">{pedido.descripcion}</p>
-      <p className="text-xs text-muted-foreground">
-        {pedido.proveedorNombre} · {pedido.cantidad} {pedido.cantidad === 1 ? 'unidad' : 'unidades'}
-        {pedido.precioUnitario ? ` · $${Number(pedido.precioUnitario).toFixed(2)} c/u` : ''}
-        {pedido.productoNombre ? ` · 📦 ${pedido.productoNombre}` : ''}
-      </p>
-    </div>
-    <Badge variant="outline" className={cn('shrink-0 text-[10px] font-bold', estadoPedidoStyle[pedido.estado] ?? '')}>
-      {pedido.estado}
-    </Badge>
-    {(pedido.estado === 'PENDIENTE' || pedido.estado === 'ENVIADO') && isAdmin && (
-      <Button size="sm" className="shrink-0 h-8 rounded-lg text-xs gap-1 bg-emerald-600 hover:bg-emerald-700"
-        onClick={() => onCambiarEstado(pedido.id, 'RECIBIDO')}>
-        <Check size={12} /> Recibido
-      </Button>
-    )}
-  </motion.div>
-)
+const PedidoRow = ({ pedido, index, onCambiarEstado, onReenviarEmail, onEditar, isAdmin }) => {
+  const [enviando, setEnviando] = useState(false)
+  
+  const handleReenviar = async () => {
+    setEnviando(true)
+    try {
+      await onReenviarEmail(pedido.id)
+    } finally {
+      setEnviando(false)
+    }
+  }
+
+  // Determinar si se puede editar
+  const puedeEditar = pedido.estado === 'PENDIENTE' || pedido.estado === 'ENVIADO'
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: 0.2 + index * 0.05 }}
+      className="flex items-center gap-4 rounded-xl border border-white/5 bg-white/[0.02] p-4 transition-all hover:border-white/10 hover:bg-white/[0.04]"
+    >
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-bold text-foreground">{pedido.descripcion}</p>
+        <p className="text-xs text-muted-foreground">
+          {pedido.proveedorNombre} · {pedido.cantidad} {pedido.cantidad === 1 ? 'unidad' : 'unidades'}
+          {pedido.precioUnitario ? ` · $${Number(pedido.precioUnitario).toFixed(2)} c/u` : ''}
+          {pedido.productoNombre ? ` · 📦 ${pedido.productoNombre}` : ''}
+        </p>
+      </div>
+      <Badge variant="outline" className={cn('shrink-0 text-[10px] font-bold', estadoPedidoStyle[pedido.estado] ?? '')}>
+        {pedido.estado}
+      </Badge>
+      {(pedido.estado === 'PENDIENTE' || pedido.estado === 'ENVIADO') && isAdmin && (
+        <>
+          {puedeEditar && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  className="shrink-0 h-8 rounded-lg text-xs gap-1 border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20"
+                  onClick={() => onEditar(pedido)}
+                >
+                  <Pencil size={12} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Editar pedido</TooltipContent>
+            </Tooltip>
+          )}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                size="sm" 
+                variant="outline"
+                className="shrink-0 h-8 rounded-lg text-xs gap-1 border-cyan-500/30 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20"
+                onClick={handleReenviar}
+                disabled={enviando}
+              >
+                {enviando ? <Loader2 size={12} className="animate-spin" /> : <Mail size={12} />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Reenviar email al proveedor</TooltipContent>
+          </Tooltip>
+          <Button size="sm" className="shrink-0 h-8 rounded-lg text-xs gap-1 bg-emerald-600 hover:bg-emerald-700"
+            onClick={() => onCambiarEstado(pedido.id, 'RECIBIDO')}>
+            <Check size={12} /> Recibido
+          </Button>
+        </>
+      )}
+    </motion.div>
+  )
+}
+
+/* ════════════════════════════════════════════════════════════ */
+const HistorialPedidos = ({ pedidos }) => {
+  const [abierto, setAbierto] = useState(false)
+  const [filtroBusqueda, setFiltroBusqueda] = useState('')
+  const [filtroEstado, setFiltroEstado] = useState('TODOS')
+
+  const pedidosFiltrados = useMemo(() => {
+    let lista = pedidos
+    if (filtroEstado !== 'TODOS') lista = lista.filter(p => p.estado === filtroEstado)
+    if (filtroBusqueda.trim()) {
+      const q = filtroBusqueda.toLowerCase()
+      lista = lista.filter(p =>
+        p.descripcion?.toLowerCase().includes(q) ||
+        p.proveedorNombre?.toLowerCase().includes(q) ||
+        p.productoNombre?.toLowerCase().includes(q)
+      )
+    }
+    return lista
+  }, [pedidos, filtroEstado, filtroBusqueda])
+
+  return (
+    <motion.div
+      className="mt-6"
+      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
+    >
+      <AuroraCard glow="violet">
+        <div className="p-6">
+          {/* Header colapsable */}
+          <button
+            onClick={() => setAbierto(v => !v)}
+            className="flex w-full items-center justify-between text-left"
+          >
+            <div className="flex items-center gap-3">
+              <History size={18} className="text-violet-400" />
+              <div>
+                <h2 className="font-heading text-lg font-bold text-foreground">Historial de Pedidos</h2>
+                <p className="text-sm text-muted-foreground">
+                  {pedidos.length} pedido{pedidos.length !== 1 ? 's' : ''} completados o cancelados
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="border-violet-500/30 bg-violet-500/10 text-violet-400">
+                {pedidos.filter(p => p.estado === 'RECIBIDO').length} recibidos · {pedidos.filter(p => p.estado === 'CANCELADO').length} cancelados
+              </Badge>
+              {abierto ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
+            </div>
+          </button>
+
+          {/* Contenido expandible */}
+          {abierto && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              {/* Filtros */}
+              <div className="mt-5 flex flex-wrap gap-3">
+                <div className="relative flex-1 min-w-[200px]">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
+                  <Input
+                    value={filtroBusqueda}
+                    onChange={e => setFiltroBusqueda(e.target.value)}
+                    placeholder="Buscar pedido..."
+                    className="h-9 rounded-xl pl-9 text-sm"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  {['TODOS', 'RECIBIDO', 'CANCELADO'].map(estado => (
+                    <button
+                      key={estado}
+                      onClick={() => setFiltroEstado(estado)}
+                      className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+                        filtroEstado === estado
+                          ? estado === 'RECIBIDO'
+                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                            : estado === 'CANCELADO'
+                            ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                            : 'bg-violet-500/20 text-violet-400 border border-violet-500/30'
+                          : 'bg-white/5 text-muted-foreground border border-white/10 hover:bg-white/10'
+                      }`}
+                    >
+                      {estado === 'TODOS' ? `Todos (${pedidos.length})` : estado === 'RECIBIDO' ? `✅ Recibidos (${pedidos.filter(p => p.estado === 'RECIBIDO').length})` : `❌ Cancelados (${pedidos.filter(p => p.estado === 'CANCELADO').length})`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <Separator className="my-4 opacity-20" />
+
+              {/* Lista */}
+              {pedidosFiltrados.length === 0 ? (
+                <div className="flex flex-col items-center py-10 text-center">
+                  <Package size={30} className="mb-3 text-muted-foreground/40" />
+                  <p className="font-medium text-muted-foreground">Sin resultados</p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2 max-h-[400px] overflow-y-auto pr-1">
+                  {pedidosFiltrados.map((p, i) => (
+                    <motion.div
+                      key={p.id}
+                      initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.03 }}
+                      className="flex items-center gap-4 rounded-xl border border-white/5 bg-white/[0.02] p-4"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-bold text-foreground">{p.descripcion}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {p.proveedorNombre} · {p.cantidad} {p.cantidad === 1 ? 'unidad' : 'unidades'}
+                          {p.precioUnitario ? ` · $${Number(p.precioUnitario).toFixed(2)} c/u` : ''}
+                          {p.productoNombre ? ` · 📦 ${p.productoNombre}` : ''}
+                          {p.precioUnitario && p.cantidad ? ` · Total: $${(Number(p.precioUnitario) * p.cantidad).toFixed(2)}` : ''}
+                        </p>
+                        {p.fechaEsperada && (
+                          <p className="text-xs text-muted-foreground/60 mt-0.5">
+                            📅 Esperado: {new Date(p.fechaEsperada).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </p>
+                        )}
+                      </div>
+                      <Badge
+                        variant="outline"
+                        className={`shrink-0 text-[10px] font-bold ${
+                          p.estado === 'RECIBIDO'
+                            ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+                            : 'border-red-500/30 bg-red-500/10 text-red-400'
+                        }`}
+                      >
+                        {p.estado === 'RECIBIDO' ? '✅ RECIBIDO' : '❌ CANCELADO'}
+                      </Badge>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          )}
+        </div>
+      </AuroraCard>
+    </motion.div>
+  )
+}
 
 /* ════════════════════════════════════════════════════════════ */
 const ProveedoresDashboard = () => {
@@ -95,7 +300,9 @@ const ProveedoresDashboard = () => {
   const [showFormPed, setShowFormPed]     = useState(false)
   const [saving, setSaving]               = useState(false)
   const [formProv, setFormProv]           = useState({ nombre: '', contacto: '', email: '', telefono: '' })
-  const [formPed, setFormPed]             = useState({ descripcion: '', cantidad: '', precioUnitario: '', fechaEsperada: '', notas: '', proveedorId: '', productoId: '' })
+  const [formPed, setFormPed]             = useState({ descripcion: '', cantidad: '', precioUnitario: '', fechaEsperada: '', notas: '', proveedorId: '', productoId: '', enviarEmail: true })
+  const [editandoPedido, setEditandoPedido] = useState(null) // null | pedido object
+  const [editandoProveedor, setEditandoProveedor] = useState(null) // null | proveedor object
 
   const { isAdmin } = useRol()
   const { productos = [] } = useApp()
@@ -139,15 +346,27 @@ const ProveedoresDashboard = () => {
       return toast.error('El nombre o empresa del proveedor es obligatorio')
     }
     try {
-      await crearProveedor({ ...formProv, nombre: formProv.nombre.trim() })
-      toast.success(`Proveedor "${formProv.nombre.trim()}" registrado`)
+      if (editandoProveedor) {
+        // Actualizar proveedor existente
+        await actualizarProveedor(editandoProveedor.id, { 
+          ...formProv, 
+          nombre: formProv.nombre.trim(),
+          negocioId: Number(getNegocioId())
+        })
+        toast.success(`Proveedor "${formProv.nombre.trim()}" actualizado`)
+      } else {
+        // Crear nuevo proveedor
+        await crearProveedor({ ...formProv, nombre: formProv.nombre.trim() })
+        toast.success(`Proveedor "${formProv.nombre.trim()}" registrado`)
+      }
       setFormProv({ nombre: '', contacto: '', email: '', telefono: '' })
+      setEditandoProveedor(null)
       setShowFormProv(false); cargar()
     } catch (err) {
       const status = err?.response?.status
       if (status === 409) toast.error('Ya existe un proveedor con ese nombre')
-      else if (status === 403) toast.error('No tienes permiso para agregar proveedores')
-      else toast.error('No se pudo registrar el proveedor. Intenta de nuevo')
+      else if (status === 403) toast.error(`No tienes permiso para ${editandoProveedor ? 'editar' : 'agregar'} proveedores`)
+      else toast.error(`No se pudo ${editandoProveedor ? 'actualizar' : 'registrar'} el proveedor. Intenta de nuevo`)
     }
     finally { setSaving(false) }
   }
@@ -159,7 +378,7 @@ const ProveedoresDashboard = () => {
     const cantidad = parseInt(formPed.cantidad)
     if (!formPed.cantidad || isNaN(cantidad) || cantidad < 1) { setSaving(false); return toast.error('La cantidad debe ser mayor a cero') }
     try {
-      await crearPedido({
+      const payload = {
         descripcion:    formPed.descripcion.trim(),
         notas:          formPed.notas || undefined,
         fechaEsperada:  formPed.fechaEsperada || undefined,
@@ -168,9 +387,11 @@ const ProveedoresDashboard = () => {
         proveedorId:    parseInt(formPed.proveedorId),
         productoId:     formPed.productoId ? parseInt(formPed.productoId) : undefined,
         usuarioId:      parseInt(getUsuarioId()),
-      })
-      toast.success('Pedido creado correctamente')
-      setFormPed({ descripcion: '', cantidad: '', precioUnitario: '', fechaEsperada: '', notas: '', proveedorId: '', productoId: '' })
+        enviarEmail:    formPed.enviarEmail,
+      }
+      await crearPedido(payload)
+      toast.success(formPed.enviarEmail ? 'Pedido creado y email enviado al proveedor' : 'Pedido creado correctamente')
+      setFormPed({ descripcion: '', cantidad: '', precioUnitario: '', fechaEsperada: '', notas: '', proveedorId: '', productoId: '', enviarEmail: true })
       setShowFormPed(false); cargar()
     } catch (err) {
       const status = err?.response?.status
@@ -192,6 +413,97 @@ const ProveedoresDashboard = () => {
       else if (status === 404) toast.error('El pedido ya no existe')
       else toast.error('No se pudo actualizar el estado del pedido')
     }
+  }
+
+  const handleReenviarEmail = async (pedidoId) => {
+    try {
+      await reenviarEmail(pedidoId)
+      toast.success('Email reenviado al proveedor correctamente')
+    } catch (err) {
+      const status = err?.response?.status
+      if (status === 403) toast.error('No tienes permiso para enviar emails')
+      else if (status === 404) toast.error('Pedido o proveedor no encontrado')
+      else toast.error('No se pudo enviar el email. Intenta de nuevo')
+    }
+  }
+
+  const handleEditarPedido = (pedido) => {
+    setEditandoPedido(pedido)
+    setFormPed({
+      descripcion: pedido.descripcion || '',
+      cantidad: String(pedido.cantidad || ''),
+      precioUnitario: pedido.precioUnitario ? String(pedido.precioUnitario) : '',
+      fechaEsperada: pedido.fechaEsperada || '',
+      notas: pedido.notas || '',
+      proveedorId: String(pedido.proveedorId || ''),
+      productoId: pedido.productoId ? String(pedido.productoId) : '',
+      enviarEmail: true,
+    })
+    setShowFormPed(true)
+  }
+
+  const handleActualizarPedido = async (e) => {
+    e.preventDefault(); setSaving(true)
+    
+    if (!formPed.descripcion?.trim()) { 
+      setSaving(false); 
+      return toast.error('La descripción del pedido es obligatoria') 
+    }
+    
+    const cantidad = parseInt(formPed.cantidad)
+    if (!formPed.cantidad || isNaN(cantidad) || cantidad < 1) { 
+      setSaving(false); 
+      return toast.error('La cantidad debe ser mayor a cero') 
+    }
+    
+    try {
+      const payload = {
+        descripcion: formPed.descripcion.trim(),
+        notas: formPed.notas || undefined,
+        fechaEsperada: formPed.fechaEsperada || undefined,
+        cantidad,
+        precioUnitario: formPed.precioUnitario ? parseFloat(formPed.precioUnitario) : undefined,
+        proveedorId: parseInt(formPed.proveedorId),
+        productoId: formPed.productoId ? parseInt(formPed.productoId) : undefined,
+      }
+      
+      await actualizarPedido(editandoPedido.id, payload)
+      toast.success('Pedido actualizado correctamente')
+      setFormPed({ descripcion: '', cantidad: '', precioUnitario: '', fechaEsperada: '', notas: '', proveedorId: '', productoId: '', enviarEmail: true })
+      setEditandoPedido(null)
+      setShowFormPed(false)
+      cargar()
+    } catch (err) {
+      const status = err?.response?.status
+      if (status === 403) toast.error('No tienes permiso para editar pedidos')
+      else if (status === 404) toast.error('El pedido ya no existe')
+      else toast.error('No se pudo actualizar el pedido. Intenta de nuevo')
+    } finally { 
+      setSaving(false) 
+    }
+  }
+
+  const handleCerrarFormPedido = () => {
+    setShowFormPed(false)
+    setEditandoPedido(null)
+    setFormPed({ descripcion: '', cantidad: '', precioUnitario: '', fechaEsperada: '', notas: '', proveedorId: '', productoId: '', enviarEmail: true })
+  }
+
+  const handleEditarProveedor = (proveedor) => {
+    setEditandoProveedor(proveedor)
+    setFormProv({
+      nombre: proveedor.nombre || '',
+      contacto: proveedor.contacto || '',
+      email: proveedor.email || '',
+      telefono: proveedor.telefono || '',
+    })
+    setShowFormProv(true)
+  }
+
+  const handleCerrarFormProveedor = () => {
+    setShowFormProv(false)
+    setEditandoProveedor(null)
+    setFormProv({ nombre: '', contacto: '', email: '', telefono: '' })
   }
 
   return (
@@ -256,7 +568,7 @@ const ProveedoresDashboard = () => {
                   </div>
                 ) : (
                   <div className="flex flex-col gap-2">
-                    {filtered.map((p, i) => <ProveedorRow key={p.id} proveedor={p} index={i} pedidosPorProveedor={pedidosPorProveedor} />)}
+                    {filtered.map((p, i) => <ProveedorRow key={p.id} proveedor={p} index={i} pedidosPorProveedor={pedidosPorProveedor} onEditar={handleEditarProveedor} isAdmin={isAdmin} />)}
                   </div>
                 )}
               </div>
@@ -286,7 +598,7 @@ const ProveedoresDashboard = () => {
                 ) : (
                   <div className="flex flex-col gap-2">
                     {pedidos.filter(p => ['PENDIENTE','ENVIADO'].includes(p.estado)).map((p, i) => (
-                      <PedidoRow key={p.id} pedido={p} index={i} onCambiarEstado={handleCambiarEstado} isAdmin={isAdmin} />
+                      <PedidoRow key={p.id} pedido={p} index={i} onCambiarEstado={handleCambiarEstado} onReenviarEmail={handleReenviarEmail} onEditar={handleEditarPedido} isAdmin={isAdmin} />
                     ))}
                   </div>
                 )}
@@ -294,14 +606,25 @@ const ProveedoresDashboard = () => {
             </AuroraCard>
           </motion.div>
         </div>
+
+        {/* Historial de pedidos completados/cancelados */}
+        {pedidos.filter(p => ['RECIBIDO','CANCELADO'].includes(p.estado)).length > 0 && (
+          <HistorialPedidos 
+            pedidos={pedidos.filter(p => ['RECIBIDO','CANCELADO'].includes(p.estado))} 
+          />
+        )}
       </PageLayout>
 
-      {/* Sheet: nuevo proveedor */}
-      <Sheet open={showFormProv} onOpenChange={setShowFormProv}>
+      {/* Sheet: nuevo/editar proveedor */}
+      <Sheet open={showFormProv} onOpenChange={(open) => !open && handleCerrarFormProveedor()}>
         <SheetContent side="right" className="flex w-[440px] max-w-full flex-col gap-0 border-l p-0">
           <SheetHeader className="shrink-0 border-b bg-muted/20 px-8 py-6">
-            <SheetTitle className="text-xl font-bold">Nuevo Proveedor</SheetTitle>
-            <SheetDescription>Registra un proveedor en el directorio.</SheetDescription>
+            <SheetTitle className="text-xl font-bold">
+              {editandoProveedor ? 'Editar Proveedor' : 'Nuevo Proveedor'}
+            </SheetTitle>
+            <SheetDescription>
+              {editandoProveedor ? 'Modifica los datos del proveedor.' : 'Registra un proveedor en el directorio.'}
+            </SheetDescription>
           </SheetHeader>
           <form onSubmit={handleGuardarProv} className="flex flex-1 flex-col gap-5 overflow-y-auto px-8 py-6">
             <div className="space-y-2">
@@ -316,6 +639,11 @@ const ProveedoresDashboard = () => {
             <div className="space-y-2">
               <Label>Correo electrónico</Label>
               <Input type="email" value={formProv.email} onChange={e => setFormProv({...formProv,email:e.target.value})} className="h-11 rounded-xl" placeholder="contacto@proveedor.com" />
+              <p className="text-xs text-muted-foreground">
+                {formProv.email?.trim() 
+                  ? '✅ Este proveedor podrá recibir notificaciones por email de sus pedidos' 
+                  : '⚠️ Sin email configurado, no se podrán enviar notificaciones automáticas'}
+              </p>
             </div>
             <div className="space-y-2">
               <Label>Teléfono</Label>
@@ -323,27 +651,35 @@ const ProveedoresDashboard = () => {
             </div>
           </form>
           <div className="flex shrink-0 justify-end gap-3 border-t bg-muted/20 px-8 py-5">
-            <Button variant="outline" onClick={() => setShowFormProv(false)} className="rounded-xl">Cancelar</Button>
+            <Button variant="outline" onClick={handleCerrarFormProveedor} className="rounded-xl">Cancelar</Button>
             <Button onClick={handleGuardarProv} disabled={saving} className="gap-2 rounded-xl">
               {saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-              {saving ? 'Guardando...' : 'Guardar'}
+              {saving ? 'Guardando...' : editandoProveedor ? 'Actualizar' : 'Guardar'}
             </Button>
           </div>
         </SheetContent>
       </Sheet>
 
-      {/* Sheet: nuevo pedido */}
-      <Sheet open={showFormPed} onOpenChange={setShowFormPed}>
+      {/* Sheet: nuevo/editar pedido */}
+      <Sheet open={showFormPed} onOpenChange={(open) => !open && handleCerrarFormPedido()}>
         <SheetContent side="right" className="flex w-[440px] max-w-full flex-col gap-0 border-l p-0">
           <SheetHeader className="shrink-0 border-b bg-muted/20 px-8 py-6">
-            <SheetTitle className="text-xl font-bold">Nuevo Pedido</SheetTitle>
-            <SheetDescription>Crea un pedido a un proveedor.</SheetDescription>
+            <SheetTitle className="text-xl font-bold">
+              {editandoPedido ? 'Editar Pedido' : 'Nuevo Pedido'}
+            </SheetTitle>
+            <SheetDescription>
+              {editandoPedido ? 'Modifica los datos del pedido.' : 'Crea un pedido a un proveedor.'}
+            </SheetDescription>
           </SheetHeader>
-          <form onSubmit={handleGuardarPed} className="flex flex-1 flex-col gap-5 overflow-y-auto px-8 py-6">
+          <form onSubmit={editandoPedido ? handleActualizarPedido : handleGuardarPed} className="flex flex-1 flex-col gap-5 overflow-y-auto px-8 py-6">
             {/* Proveedor */}
             <div className="space-y-2">
               <Label>Proveedor *</Label>
-              <Select value={formPed.proveedorId} onValueChange={v => setFormPed({...formPed, proveedorId: v})}>
+              <Select 
+                value={formPed.proveedorId} 
+                onValueChange={v => setFormPed({...formPed, proveedorId: v})}
+                disabled={!!editandoPedido}
+              >
                 <SelectTrigger className="h-11 rounded-xl">
                   <SelectValue placeholder="Selecciona un proveedor..." />
                 </SelectTrigger>
@@ -353,18 +689,32 @@ const ProveedoresDashboard = () => {
                   ))}
                 </SelectContent>
               </Select>
+              {editandoPedido && (
+                <p className="text-xs text-muted-foreground">🔒 El proveedor no se puede cambiar una vez creado el pedido</p>
+              )}
             </div>
 
             {/* Descripción */}
             <div className="space-y-2">
               <Label>Descripción *</Label>
-              <Input value={formPed.descripcion} onChange={e => setFormPed({...formPed,descripcion:e.target.value})} required className="h-11 rounded-xl" placeholder="Ej. Martillos de acero 500g" />
+              <Input 
+                value={formPed.descripcion} 
+                onChange={e => setFormPed({...formPed,descripcion:e.target.value})} 
+                required 
+                className="h-11 rounded-xl" 
+                placeholder="Ej. Martillos de acero 500g" 
+                disabled={editandoPedido?.estado === 'ENVIADO'}
+              />
             </div>
 
             {/* Producto del inventario */}
             <div className="space-y-2">
               <Label>Producto del inventario <span className="text-muted-foreground">(opcional)</span></Label>
-              <Select value={formPed.productoId} onValueChange={v => setFormPed({...formPed, productoId: v})}>
+              <Select 
+                value={formPed.productoId} 
+                onValueChange={v => setFormPed({...formPed, productoId: v})}
+                disabled={editandoPedido?.estado === 'ENVIADO'}
+              >
                 <SelectTrigger className="h-11 rounded-xl">
                   <SelectValue placeholder="Sin vincular a producto" />
                 </SelectTrigger>
@@ -384,28 +734,93 @@ const ProveedoresDashboard = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Cantidad *</Label>
-                <Input type="number" min="1" value={formPed.cantidad} onChange={e => setFormPed({...formPed,cantidad:e.target.value})} required className="h-11 rounded-xl" placeholder="0" />
+                <Input 
+                  type="number" 
+                  min="1" 
+                  value={formPed.cantidad} 
+                  onChange={e => setFormPed({...formPed,cantidad:e.target.value})} 
+                  required 
+                  className="h-11 rounded-xl" 
+                  placeholder="0" 
+                  disabled={editandoPedido?.estado === 'ENVIADO'}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Precio unitario</Label>
-                <Input type="number" step="0.01" min="0" value={formPed.precioUnitario} onChange={e => setFormPed({...formPed,precioUnitario:e.target.value})} className="h-11 rounded-xl" placeholder="0.00" />
+                <Input 
+                  type="number" 
+                  step="0.01" 
+                  min="0" 
+                  value={formPed.precioUnitario} 
+                  onChange={e => setFormPed({...formPed,precioUnitario:e.target.value})} 
+                  className="h-11 rounded-xl" 
+                  placeholder="0.00" 
+                  disabled={editandoPedido?.estado === 'ENVIADO'}
+                />
               </div>
             </div>
 
             <div className="space-y-2">
               <Label>Fecha esperada</Label>
-              <Input type="date" value={formPed.fechaEsperada} onChange={e => setFormPed({...formPed,fechaEsperada:e.target.value})} className="h-11 rounded-xl" />
+              <Input 
+                type="date" 
+                value={formPed.fechaEsperada} 
+                onChange={e => setFormPed({...formPed,fechaEsperada:e.target.value})} 
+                className="h-11 rounded-xl" 
+              />
             </div>
             <div className="space-y-2">
               <Label>Notas</Label>
-              <Input value={formPed.notas} onChange={e => setFormPed({...formPed,notas:e.target.value})} className="h-11 rounded-xl" placeholder="Instrucciones adicionales..." />
+              <Input 
+                value={formPed.notas} 
+                onChange={e => setFormPed({...formPed,notas:e.target.value})} 
+                className="h-11 rounded-xl" 
+                placeholder="Instrucciones adicionales..." 
+              />
             </div>
+
+            {!editandoPedido && (
+              <>
+                <Separator className="opacity-30" />
+
+                {/* Notificar al proveedor - solo en crear */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="font-semibold">Notificar al proveedor</Label>
+                    <Switch
+                      checked={formPed.enviarEmail}
+                      onCheckedChange={(checked) => setFormPed({...formPed, enviarEmail: checked})}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {formPed.enviarEmail ? (
+                      <span className="flex items-center gap-1">
+                        <Send size={11} className="text-emerald-400" />
+                        <span className="text-emerald-400">✓</span> Se enviará un email automático al proveedor con los detalles del pedido
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 text-amber-400">
+                        ⚠️ Solo se registrará el pedido sin notificación
+                      </span>
+                    )}
+                  </p>
+                </div>
+              </>
+            )}
+
+            {editandoPedido?.estado === 'ENVIADO' && (
+              <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+                <p className="text-xs text-amber-400">
+                  ℹ️ Este pedido ya fue enviado. Solo puedes modificar la fecha esperada y las notas.
+                </p>
+              </div>
+            )}
           </form>
           <div className="flex shrink-0 justify-end gap-3 border-t bg-muted/20 px-8 py-5">
-            <Button variant="outline" onClick={() => setShowFormPed(false)} className="rounded-xl">Cancelar</Button>
-            <Button onClick={handleGuardarPed} disabled={saving} className="gap-2 rounded-xl">
+            <Button variant="outline" onClick={handleCerrarFormPedido} className="rounded-xl">Cancelar</Button>
+            <Button onClick={editandoPedido ? handleActualizarPedido : handleGuardarPed} disabled={saving} className="gap-2 rounded-xl">
               {saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-              {saving ? 'Guardando...' : 'Crear Pedido'}
+              {saving ? 'Guardando...' : editandoPedido ? 'Actualizar' : 'Crear Pedido'}
             </Button>
           </div>
         </SheetContent>

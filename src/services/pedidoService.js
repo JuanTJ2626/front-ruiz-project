@@ -56,3 +56,9 @@ export const cambiarEstadoPedido = (id, estado) =>
 /** Eliminar pedido — solo ADMIN */
 export const eliminarPedido = (id) =>
   fetchApi(`/pedidos/${id}`, { method: 'DELETE' });
+
+/** Reenviar email de notificación al proveedor — solo ADMIN */
+export const reenviarEmail = (pedidoId) =>
+  fetchApi(`/pedidos/${pedidoId}/enviar-email`, {
+    method: 'POST',
+  });
