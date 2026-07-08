@@ -7,7 +7,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { loginUser, setAuthData } from '../services/authService';
 import { toast } from 'sonner';
 import { cn } from '../lib/utils';
-import { APP_NAME, APP_LOGO } from '../assets/brand';
+import { APP_NAME, APP_LOGO, APP_LOGO_WHITE } from '../assets/brand';
 
 /* ── Cubos Metálicos (Ligeramente Gelatinosos) ───────────── */
 const AnimatedShape = ({ color, distort, speed, position, scale }) => {
@@ -63,6 +63,7 @@ const Login = ({ onLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isDark, setIsDark] = useState(() => localStorage.getItem('theme') === 'dark');
 
   const containerRef = useRef(null);
   const cardRef = useRef(null);
@@ -72,8 +73,10 @@ const Login = ({ onLogin }) => {
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark') {
       document.documentElement.classList.add('dark');
+      setIsDark(true);
     } else {
       document.documentElement.classList.remove('dark');
+      setIsDark(false);
     }
   }, []);
 
@@ -134,11 +137,11 @@ const Login = ({ onLogin }) => {
       <div ref={cardRef} className="login-card mx-auto shrink-0 relative z-10">
         {/* Logo */}
         <div className="gsap-stagger mb-4 flex items-center justify-center">
-          {APP_LOGO ? (
+          {(isDark ? APP_LOGO_WHITE : APP_LOGO) ? (
             <img
-              src={APP_LOGO}
+              src={isDark && APP_LOGO_WHITE ? APP_LOGO_WHITE : APP_LOGO}
               alt={APP_NAME}
-              className="h-32 w-auto max-w-[380px] object-contain"
+              className="h-20 w-auto max-w-[280px] object-contain"
             />
           ) : (
             <span className="font-heading text-[1.1rem] font-bold tracking-[0.15em] whitespace-nowrap bg-gradient-to-br from-teal-600 to-cyan-500 bg-clip-text text-transparent">

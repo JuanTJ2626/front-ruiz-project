@@ -7,7 +7,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { useApp } from '../context/AppContext';
 import { useRol } from '../hooks/useRol';
-import { APP_NAME, APP_LOGO, APP_ICON } from '../assets/brand';
+import { APP_NAME, APP_LOGO, APP_LOGO_WHITE, APP_ICON } from '../assets/brand';
 
 const LoginStyleBubble = ({ isHovered }) => {
   const meshRef = useRef();
@@ -183,11 +183,18 @@ const Sidebar = ({ onLogout }) => {
         >
           {/* ── Header: logo ── */}
           <div className="hidden md:flex shrink-0 items-center justify-center px-5 pt-6 pb-4">
-            {APP_LOGO ? (
+            {APP_LOGO_WHITE ? (
+              <img
+                src={APP_LOGO_WHITE}
+                alt={APP_NAME}
+                className="h-14 w-auto max-w-[180px] object-contain"
+                draggable={false}
+              />
+            ) : APP_LOGO ? (
               <img
                 src={APP_LOGO}
                 alt={APP_NAME}
-                className="h-20 w-auto max-w-[400px] object-contain"
+                className="h-14 w-auto max-w-[180px] object-contain"
                 draggable={false}
               />
             ) : (
