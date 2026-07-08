@@ -77,10 +77,10 @@ const ClientesDashboard = () => {
     <PageLayout
       title="Directorio de Clientes"
       subtitle="Gestiona clientes, historial de compras y análisis de comportamiento."
-      badge="Vista previa · Demo"
+
     >
       {/* KPIs */}
-      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <AuroraStatCard icon={Users} label="Clientes Totales" value={stats.total} sub="en el directorio" glow="cyan" delay={80} />
         <AuroraStatCard icon={TrendingUp} label="Clientes Premium" value={stats.premium} sub="alto valor" glow="violet" delay={160} />
         <AuroraStatCard icon={ShoppingBag} label="Compras Totales" value={stats.comprasTotal} sub="transacciones" glow="emerald" delay={240} />

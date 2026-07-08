@@ -14,6 +14,7 @@ import ChatbotWidget from './components/ChatbotWidget';
 import { Toaster } from './components/ui/sonner';
 import { clearAuthData } from './services/authService';
 import { getRol } from './services/config';
+import { cn } from './lib/utils';
 
 // Bloquea rutas exclusivas de ADMIN — redirige al dashboard si es EMPLEADO
 function RequireAdmin({ children }) {
@@ -33,22 +34,21 @@ function AppShell() {
     <div className="flex min-h-screen bg-background">
       <Sidebar onLogout={handleLogout} onHoverChange={setSidebarOpen} />
       <main
-        className="flex-1"
-        style={{
-          marginLeft: sidebarOpen ? '224px' : '56px',
-          transition: 'margin-left 220ms cubic-bezier(0.4,0,0.2,1)',
-        }}
+        className={cn(
+          "flex-1 transition-[margin] duration-[220ms] ease-[cubic-bezier(0.4,0,0.2,1)] pb-32 md:pb-0 md:rounded-l-[2.5rem] md:overflow-hidden md:shadow-[inset_25px_0_50px_-12px_rgba(0,0,0,0.25)] md:border-l border-white/20 dark:border-white/5",
+          sidebarOpen ? "md:ml-[224px]" : "md:ml-[80px]"
+        )}
       >
         <Routes>
-          <Route path="/"              element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard"     element={<Dashboard />} />
-          <Route path="/productos"     element={<ProductosPage />} />
-          <Route path="/stock"         element={<StockDashboard />} />
-          <Route path="/proveedores"   element={<RequireAdmin><ProveedoresDashboard /></RequireAdmin>} />
-          <Route path="/clientes"      element={<RequireAdmin><ClientesDashboard /></RequireAdmin>} />
-          <Route path="/reportes"      element={<RequireAdmin><ReportesDashboard /></RequireAdmin>} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/productos" element={<ProductosPage />} />
+          <Route path="/stock" element={<StockDashboard />} />
+          <Route path="/proveedores" element={<RequireAdmin><ProveedoresDashboard /></RequireAdmin>} />
+          <Route path="/clientes" element={<RequireAdmin><ClientesDashboard /></RequireAdmin>} />
+          <Route path="/reportes" element={<RequireAdmin><ReportesDashboard /></RequireAdmin>} />
           <Route path="/configuracion" element={<RequireAdmin><ConfiguracionDashboard /></RequireAdmin>} />
-          <Route path="*"              element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </main>
       <ChatbotWidget />

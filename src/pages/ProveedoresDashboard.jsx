@@ -566,7 +566,7 @@ const ProveedoresDashboard = () => {
       <PageLayout
         title="Directorio de Proveedores"
         subtitle="Gestiona contactos, pedidos pendientes y recepción de mercancía."
-        badge="Módulo Proveedores"
+
         actions={
           isAdmin && (
             <div className="flex gap-2">
@@ -591,7 +591,7 @@ const ProveedoresDashboard = () => {
         }
       >
         {/* KPIs */}
-        <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
           <AuroraStatCard icon={Truck}        label="Proveedores"        value={proveedores.length} sub="registrados"          glow="cyan"   delay={80} />
           <AuroraStatCard icon={Clock}        label="Pedidos Pendientes" value={pedidos.filter(p => p.estado === 'PENDIENTE').length} sub="por recibir" glow="amber" delay={160} trend={pedidos.filter(p=>p.estado==='PENDIENTE').length > 0 ? 'Pendiente' : undefined} />
           <AuroraStatCard icon={CheckCircle2} label="Recibidos"          value={pedidos.filter(p => p.estado === 'RECIBIDO').length}  sub="pedidos completados" glow="emerald" delay={240} />

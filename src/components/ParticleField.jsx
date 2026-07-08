@@ -16,9 +16,9 @@ const Particles = ({ count = 120, spread = 8 }) => {
       positions[i * 3 + 1] = (Math.random() - 0.5) * spread
       positions[i * 3 + 2] = (Math.random() - 0.5) * 3
       velocities.push({
-        x: (Math.random() - 0.5) * 0.004,
-        y: (Math.random() - 0.5) * 0.003,
-        z: (Math.random() - 0.5) * 0.001,
+        x: (Math.random() - 0.5) * 0.015,
+        y: (Math.random() - 0.5) * 0.012,
+        z: (Math.random() - 0.5) * 0.005,
       })
     }
     return { positions, velocities }

@@ -150,7 +150,7 @@ export default function ProductosPage() {
     <PageLayout
       title="Panel de Inventario"
       subtitle="Administra y controla tu inventario en tiempo real"
-      badge="Módulo Productos · MVP"
+
       actions={
         <Button onClick={() => { cancelForm(); setShowForm(true); }} className="gap-2 rounded-xl shadow-md">
           <Plus size={16} /> Nuevo Producto
@@ -295,7 +295,7 @@ export default function ProductosPage() {
       </Sheet>
 
       {/* KPIs */}
-      <div className="mb-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="mb-8 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <AuroraStatCard icon={Package}       label="Total Productos"      value={stats.totalProductos}          sub="en catálogo"       glow="cyan"    delay={80} />
         <AuroraStatCard icon={Archive}       label="Unidades en Stock"    value={stats.totalStock}               sub="unidades totales"  glow="emerald" delay={160} />
         <AuroraStatCard icon={DollarSign}    label="Valor del Inventario" value={stats.valorTotalInventario}     prefix="$" decimals={2} sub="precio × stock" glow="violet" delay={240} />

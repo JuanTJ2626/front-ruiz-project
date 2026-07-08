@@ -7,6 +7,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { useApp } from '../context/AppContext';
 import { useRol } from '../hooks/useRol';
+import { APP_NAME, APP_LOGO, APP_ICON } from '../assets/brand';
 
 const LoginStyleBubble = ({ isHovered }) => {
   const meshRef = useRef();
@@ -25,7 +26,7 @@ const LoginStyleBubble = ({ isHovered }) => {
     <group position={[0, 0, 0]}>
       <Sphere ref={meshRef} args={[1.5, 64, 64]}>
         <MeshDistortMaterial
-          color="#06b6d4"
+          color="#1E3A8A"
           attach="material"
           distort={isHovered ? 0.6 : 0.4}
           speed={isHovered ? 2.0 : 1.5}
@@ -92,12 +93,12 @@ const Sidebar = ({ onLogout }) => {
   }, [isHovered]);
 
   const allNavItems = [
-    { id: 'dashboard',     label: 'Dashboard',     roles: ['ADMIN', 'EMPLEADO'], icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9" rx="1" /><rect x="14" y="3" width="7" height="5" rx="1" /><rect x="14" y="12" width="7" height="9" rx="1" /><rect x="3" y="16" width="7" height="5" rx="1" /></svg> },
-    { id: 'productos',     label: 'Productos',     roles: ['ADMIN', 'EMPLEADO'], icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg> },
-    { id: 'stock',         label: 'Stock',         roles: ['ADMIN', 'EMPLEADO'], icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg> },
-    { id: 'proveedores',   label: 'Proveedores',   roles: ['ADMIN'],             icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" /><polygon points="16 8 20 8 23 11 23 16 16 16 16 8" /><circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" /></svg> },
-    { id: 'reportes',      label: 'Reportes',      roles: ['ADMIN'],             icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg> },
-    { id: 'configuracion', label: 'Configuración', roles: ['ADMIN'],             icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg> },
+    { id: 'dashboard', label: 'Dashboard', roles: ['ADMIN', 'EMPLEADO'], icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9" rx="1" /><rect x="14" y="3" width="7" height="5" rx="1" /><rect x="14" y="12" width="7" height="9" rx="1" /><rect x="3" y="16" width="7" height="5" rx="1" /></svg> },
+    { id: 'productos', label: 'Productos', roles: ['ADMIN', 'EMPLEADO'], icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg> },
+    { id: 'stock', label: 'Stock', roles: ['ADMIN', 'EMPLEADO'], icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg> },
+    { id: 'proveedores', label: 'Proveedores', roles: ['ADMIN'], icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" /><polygon points="16 8 20 8 23 11 23 16 16 16 16 8" /><circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" /></svg> },
+    { id: 'reportes', label: 'Reportes', roles: ['ADMIN'], icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg> },
+    { id: 'configuracion', label: 'Configuración', roles: ['ADMIN'], icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg> },
   ];
 
   const navItems = allNavItems.filter(item => item.roles.includes(rol));
@@ -106,22 +107,26 @@ const Sidebar = ({ onLogout }) => {
     <aside
       ref={containerRef}
       className={cn(
-        'fixed top-0 left-[30px] z-[1000] flex h-screen flex-col items-center py-[30px] transition-[left] duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]',
-        isHovered && 'left-0'
+        'fixed z-[1000000] flex transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]',
+        // Desktop
+        'md:top-0 md:bottom-auto md:h-screen md:flex-col md:items-center md:py-[30px] md:translate-x-0',
+        isHovered ? 'md:left-0' : 'md:left-[30px]',
+        // Mobile
+        'bottom-4 left-1/2 -translate-x-1/2 flex-row items-end gap-4 md:gap-0'
       )}
     >
       <div
         className={cn(
           "sidebar-bubble relative flex h-[65px] w-[65px] shrink-0 cursor-pointer items-center justify-center rounded-full border backdrop-blur-[16px] shadow-[0_4px_20px_rgba(0,0,0,0.3)] transition-all duration-[400ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:scale-105",
           isDarkMode
-            ? "border-amber-500/30 bg-gradient-to-br from-amber-500/20 to-orange-500/20 hover:border-amber-500/50 hover:shadow-[0_8px_30px_rgba(251,191,36,0.4)]"
-            : "border-slate-300/50 bg-gradient-to-br from-white/80 to-slate-100/80 hover:border-slate-400/70 hover:shadow-[0_8px_30px_rgba(15,23,42,0.2)]"
+            ? "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10"
+            : "border-slate-200/50 bg-white/80 hover:border-slate-300 hover:bg-white"
         )}
         onClick={() => setIsDarkMode(!isDarkMode)}
         title={isDarkMode ? 'Modo claro' : 'Modo oscuro'}
       >
         {isDarkMode ? (
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400 drop-shadow-[0_2px_4px_rgba(251,191,36,0.5)]">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
             <circle cx="12" cy="12" r="5" />
             <line x1="12" y1="1" x2="12" y2="3" />
             <line x1="12" y1="21" x2="12" y2="23" />
@@ -141,19 +146,20 @@ const Sidebar = ({ onLogout }) => {
 
       <div
         className={cn(
-          'sidebar-container relative my-auto flex flex-col items-center justify-center',
+          'sidebar-container relative md:my-auto flex flex-col items-center justify-center transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]',
           isHovered
-            ? 'sidebar-container-expanded h-[560px] w-[240px] cursor-default rounded-[32px] border border-cyan-500/20 bg-[rgba(10,12,18,0.75)] shadow-[0_24px_60px_rgba(0,0,0,0.6),inset_0_0_50px_rgba(6,182,212,0.07)] backdrop-blur-[24px]'
-            : 'h-[100px] w-[100px] cursor-pointer rounded-full'
+            ? 'sidebar-container-expanded cursor-default border border-cyan-500/20 bg-[rgba(10,12,18,0.85)] shadow-[0_24px_60px_rgba(0,0,0,0.6),inset_0_0_50px_rgba(6,182,212,0.07)] backdrop-blur-[24px] md:h-[560px] md:w-[240px] md:rounded-[32px] h-[75px] w-[95vw] rounded-[24px]'
+            : 'cursor-pointer rounded-full h-[80px] w-[80px] md:h-[100px] md:w-[100px]'
         )}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
+        onMouseEnter={() => window.innerWidth >= 768 && setIsHovered(true)}
+        onMouseLeave={() => window.innerWidth >= 768 && setIsHovered(false)}
+        onClick={() => window.innerWidth < 768 && setIsHovered(!isHovered)}
       >
-        <div className="pointer-events-none absolute top-1/2 left-1/2 z-0 h-[200%] w-[130%] -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_15px_45px_rgba(6,182,212,0.4)] [&_canvas]:!h-full [&_canvas]:!w-full">
+        <div className="pointer-events-none absolute top-1/2 left-1/2 z-0 h-[200%] w-[130%] -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_15px_45px_rgba(30,58,138,0.4)] [&_canvas]:!h-full [&_canvas]:!w-full">
           <Canvas camera={{ position: [0, 0, 7], fov: 45 }} gl={{ alpha: true }}>
             <ambientLight intensity={0.5} />
             <directionalLight position={[10, 10, 5]} intensity={1.5} color="#ffffff" />
-            <directionalLight position={[-10, -10, -5]} intensity={2} color="#06b6d4" />
+            <directionalLight position={[-10, -10, -5]} intensity={2} color="#1E3A8A" />
             <LoginStyleBubble isHovered={isHovered} />
           </Canvas>
         </div>
@@ -172,24 +178,27 @@ const Sidebar = ({ onLogout }) => {
 
         <div
           ref={contentRef}
-          className="absolute inset-0 z-10 flex flex-col bg-transparent"
+          className="absolute inset-0 z-10 flex md:flex-col flex-row bg-transparent"
           style={{ opacity: 0, pointerEvents: 'none' }}
         >
           {/* ── Header: logo ── */}
-          <div className="flex shrink-0 items-center gap-3 px-5 pt-6 pb-4">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-cyan-500/30 bg-gradient-to-br from-cyan-500/40 to-emerald-500/40 shadow-[0_4px_12px_rgba(6,182,212,0.35)]">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18" />
-                <path d="M16 10a4 4 0 01-8 0" />
-              </svg>
-            </div>
-            <span className="whitespace-nowrap font-heading text-[1.15rem] font-extrabold tracking-tight bg-gradient-to-r from-teal-300 via-teal-400 to-cyan-500 bg-clip-text text-transparent">
-              INVENT-PRO
-            </span>
+          <div className="hidden md:flex shrink-0 items-center justify-center px-5 pt-6 pb-4">
+            {APP_LOGO ? (
+              <img
+                src={APP_LOGO}
+                alt={APP_NAME}
+                className="h-20 w-auto max-w-[400px] object-contain"
+                draggable={false}
+              />
+            ) : (
+              <span className="whitespace-nowrap font-heading text-[1.15rem] font-extrabold tracking-tight bg-gradient-to-r from-teal-300 via-teal-400 to-cyan-500 bg-clip-text text-transparent">
+                {APP_NAME}
+              </span>
+            )}
           </div>
 
           {/* ── Negocio ── */}
-          <div className="shrink-0 px-4 pb-3">
+          <div className="hidden md:block shrink-0 px-4 pb-3">
             {negocios.length > 1 ? (
               <>
                 <p className="mb-1 px-1 text-[9px] font-bold uppercase tracking-[0.12em] text-white/25">Negocio activo</p>
@@ -212,27 +221,27 @@ const Sidebar = ({ onLogout }) => {
           </div>
 
           {/* ── Nav ── */}
-          <nav className="flex flex-1 flex-col gap-[3px] overflow-y-auto px-3 py-1">
+          <nav className="flex flex-1 md:flex-col flex-row items-center md:items-stretch justify-evenly md:justify-start gap-[4px] md:gap-[3px] px-2 py-2 md:overflow-y-auto md:px-3 md:py-1 w-full">
             {navItems.map((item) => {
               const isActive = activePage === item.id;
               return (
                 <div
                   key={item.id}
-                  onClick={() => navigate(`/${item.id}`)}
+                  onClick={(e) => { e.stopPropagation(); navigate(`/${item.id}`); window.innerWidth < 768 && setIsHovered(false); }}
                   className={cn(
-                    'group relative flex cursor-pointer items-center gap-3 rounded-2xl px-3 py-[10px] text-[0.88rem] font-semibold transition-all duration-200 select-none',
+                    'group relative flex cursor-pointer md:items-center flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 rounded-[18px] md:rounded-2xl px-2 py-2 md:px-3 md:py-[10px] text-[10px] md:text-[0.88rem] font-semibold transition-all duration-200 select-none flex-1 md:flex-none',
                     isActive
-                      ? 'bg-gradient-to-r from-cyan-500/18 to-emerald-500/10 text-teal-300 shadow-[inset_0_0_0_1px_rgba(6,182,212,0.22)]'
+                      ? 'bg-gradient-to-r md:from-cyan-500/18 md:to-emerald-500/10 from-cyan-500/25 to-emerald-500/25 text-teal-300 md:shadow-[inset_0_0_0_1px_rgba(6,182,212,0.22)]'
                       : 'text-white/50 hover:bg-white/[0.06] hover:text-white/90'
                   )}
                 >
                   <span className={cn(
-                    'nav-icon flex w-[18px] shrink-0 items-center justify-center transition-colors duration-200',
+                    'nav-icon flex w-[18px] md:w-[18px] shrink-0 items-center justify-center transition-colors duration-200',
                     isActive ? 'text-teal-400' : 'text-white/40 group-hover:text-white/70'
                   )}>
                     {item.icon}
                   </span>
-                  <span className="whitespace-nowrap leading-none">{item.label}</span>
+                  <span className="whitespace-nowrap leading-none mt-1 md:mt-0">{item.label}</span>
                 </div>
               );
             })}
@@ -242,17 +251,18 @@ const Sidebar = ({ onLogout }) => {
 
       <div
         className={cn(
-          "sidebar-bubble relative flex h-[65px] w-[65px] shrink-0 cursor-pointer items-center justify-center rounded-full border backdrop-blur-[16px] shadow-[0_4px_20px_rgba(0,0,0,0.3)] transition-all duration-[400ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:scale-105",
+          "sidebar-bubble relative flex h-[55px] w-[55px] md:h-[65px] md:w-[65px] shrink-0 cursor-pointer items-center justify-center rounded-full border backdrop-blur-[16px] shadow-[0_4px_20px_rgba(0,0,0,0.3)] transition-all duration-[400ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:scale-105",
           isDarkMode
-            ? "border-red-500/30 bg-gradient-to-br from-red-500/20 to-rose-600/20 hover:border-red-500/50 hover:shadow-[0_8px_30px_rgba(239,68,68,0.4)]"
-            : "border-red-300/50 bg-gradient-to-br from-red-50/90 to-rose-100/90 hover:border-red-400/70 hover:shadow-[0_8px_30px_rgba(220,38,38,0.25)]"
+            ? "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10"
+            : "border-slate-200/50 bg-white/80 hover:border-slate-300 hover:bg-white",
+          isHovered && "md:pointer-events-none md:scale-0 md:opacity-0"
         )}
         onClick={onLogout}
         title="Cerrar sesión"
       >
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={cn(
           "transition-colors duration-300",
-          isDarkMode ? "text-red-400 drop-shadow-[0_2px_4px_rgba(239,68,68,0.5)]" : "text-red-600 drop-shadow-[0_2px_4px_rgba(220,38,38,0.3)]"
+          isDarkMode ? "text-white/80 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]" : "text-slate-700 drop-shadow-[0_2px_4px_rgba(15,23,42,0.3)]"
         )}>
           <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
           <polyline points="16 17 21 12 16 7" />

@@ -103,7 +103,7 @@ const ReportesDashboard = () => {
     <PageLayout
       title="Reportes e Informes"
       subtitle="Métricas clave del inventario con exportación a PDF y CSV desde el backend."
-      badge="Módulo Reportes"
+
       actions={
         <>
           <Button variant="outline" onClick={() => handleExport('csv')} className="gap-2 rounded-xl border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20">
@@ -115,7 +115,7 @@ const ReportesDashboard = () => {
         </>
       }
     >
-      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <AuroraStatCard icon={Package} label="Productos" value={stats.totalProductos ?? 0} sub="en inventario" glow="cyan" delay={80} />
         <AuroraStatCard icon={Archive} label="Stock Total" value={(stats.totalStock ?? 0).toLocaleString()} sub="unidades" glow="emerald" delay={160} />
         <AuroraStatCard icon={DollarSign} label="Valor Inventario" value={`$${(stats.valorTotalInventario ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`} sub="valor actual" glow="violet" delay={240} />

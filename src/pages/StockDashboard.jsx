@@ -151,14 +151,14 @@ const StockDashboard = () => {
       <PageLayout
         title="Control de Stock"
         subtitle="Registra entradas, salidas y ajustes de inventario. Alertas automáticas cuando el stock baja del mínimo."
-        badge="Módulo Stock · MVP"
+
         actions={
           <Button onClick={() => setShowForm(true)} className="gap-2 rounded-xl shadow-md">
             <Plus size={16} /> Nuevo Movimiento
           </Button>
         }
       >
-        <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
           <AuroraStatCard icon={Archive} label="Stock Total" value={(stats.totalStock ?? 0).toLocaleString()} sub="unidades actuales" glow="cyan" delay={80} />
           <AuroraStatCard icon={ArrowDownCircle} label="Entradas" value={movStats.entradas} sub="unidades recibidas" glow="emerald" delay={160} />
           <AuroraStatCard icon={ArrowUpCircle} label="Salidas" value={movStats.salidas} sub="unidades vendidas" glow="rose" delay={240} />

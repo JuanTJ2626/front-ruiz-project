@@ -188,61 +188,56 @@ const Dashboard = () => {
         {/* ── Hero Banner ── */}
         <div className="mb-8">
           <div className="relative overflow-hidden rounded-[1.5rem]">
-            <div className="relative px-8 pb-8 pt-8 lg:px-10 lg:pt-10"
-              style={{ background: 'linear-gradient(135deg, #0d0d1f 0%, #0a0f1e 40%, #0f0a1a 70%, #0d0d1f 100%)' }}
-            >
+            <div className="relative px-8 pb-8 pt-8 lg:px-10 lg:pt-10 bg-gradient-to-br from-white via-slate-50 to-slate-100 dark:from-[#0d0d1f] dark:via-[#0a0f1e] dark:to-[#0f0a1a]">
               {/* Partículas Three.js */}
               <div className="pointer-events-none absolute inset-0 overflow-hidden">
-                <ParticleField className="h-full w-full opacity-50" />
+                <ParticleField className="h-full w-full opacity-60 dark:opacity-40" />
               </div>
-              {/* Aurora orbs internos */}
+              {/* Aurora orbs internos (tonos suaves para modo luz) */}
               <div className="pointer-events-none absolute inset-0 overflow-hidden">
-                <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-violet-600/30 blur-[80px]" />
-                <div className="absolute -left-8 bottom-0 h-44 w-44 rounded-full bg-cyan-500/20 blur-[70px]" />
-                <div className="absolute right-1/3 top-1/2 h-36 w-36 rounded-full bg-rose-500/15 blur-[60px]" />
+                <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-blue-400/15 blur-[80px]" />
+                <div className="absolute -left-8 bottom-0 h-44 w-44 rounded-full bg-cyan-400/10 blur-[70px]" />
+                <div className="absolute right-1/3 top-1/2 h-36 w-36 rounded-full bg-violet-400/10 blur-[60px]" />
               </div>
 
               <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                 <div className="max-w-2xl">
                   <div className="mb-4 flex flex-wrap items-center gap-2">
-                    <span className="gsap-hero-badge flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-400">
-                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-                      Sistema activo
-                    </span>
-                    <span className="gsap-hero-badge ml-auto flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-mono font-semibold text-white/50">
+
+                    <span className="gsap-hero-badge ml-auto flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100/80 px-3 py-1 text-xs font-mono font-semibold text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-white/50">
                       <Activity size={11} />
                       <LiveClock />
                     </span>
                   </div>
-                  <h1 className="gsap-hero-title font-heading text-3xl font-bold leading-tight tracking-tight text-white lg:text-4xl">
+                  <h1 className="gsap-hero-title font-heading text-3xl font-bold leading-tight tracking-tight text-slate-900 dark:text-white lg:text-4xl">
                     {greet()}, 
-                    <span className="mt-1 block bg-gradient-to-r from-white/90 via-white/60 to-white/35 bg-clip-text text-transparent">
+                    <span className="mt-1 block bg-gradient-to-r from-slate-800 via-slate-600 to-slate-400 dark:from-white/90 dark:via-white/60 dark:to-white/35 bg-clip-text text-transparent">
                       Sistema de Inventario
                     </span>
                   </h1>
-                  <p className="gsap-hero-sub mt-3 max-w-lg text-[14px] capitalize leading-relaxed text-white/45">
+                  <p className="gsap-hero-sub mt-3 max-w-lg text-[14px] capitalize leading-relaxed text-slate-500 dark:text-white/45">
                     {today}
                   </p>
                 </div>
 
                 {/* Mini stats del negocio */}
                 <div className="flex shrink-0 flex-col gap-2 sm:flex-row lg:flex-col">
-                  <div className="gsap-hero-stat flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 backdrop-blur-sm">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/20">
-                      <CheckCircle2 size={16} className="text-emerald-400" />
+                  <div className="gsap-hero-stat flex items-center gap-3 rounded-2xl border border-slate-200 bg-white/80 dark:border-white/10 dark:bg-white/5 px-5 py-3 shadow-sm backdrop-blur-sm">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/15 dark:bg-emerald-500/20">
+                      <CheckCircle2 size={16} className="text-emerald-500 dark:text-emerald-400" />
                     </div>
                     <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-widest text-white/40">Salud del stock</p>
-                      <p className="font-heading text-lg font-bold text-white">{healthPct}%</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-white/40">Salud del stock</p>
+                      <p className="font-heading text-lg font-bold text-slate-900 dark:text-white">{healthPct}%</p>
                     </div>
                   </div>
-                  <div className="gsap-hero-stat flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 backdrop-blur-sm">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/20">
-                      <AlertTriangle size={16} className="text-amber-400" />
+                  <div className="gsap-hero-stat flex items-center gap-3 rounded-2xl border border-slate-200 bg-white/80 dark:border-white/10 dark:bg-white/5 px-5 py-3 shadow-sm backdrop-blur-sm">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/15 dark:bg-amber-500/20">
+                      <AlertTriangle size={16} className="text-amber-500 dark:text-amber-400" />
                     </div>
                     <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-widest text-white/40">Alertas activas</p>
-                      <p className="font-heading text-lg font-bold text-white">{lowStockCount}</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-white/40">Alertas activas</p>
+                      <p className="font-heading text-lg font-bold text-slate-900 dark:text-white">{lowStockCount}</p>
                     </div>
                   </div>
                 </div>
@@ -252,7 +247,7 @@ const Dashboard = () => {
         </div>
 
         {/* ── KPIs ── */}
-        <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
           <div className="gsap-kpi">
             <AuroraStatCard icon={Package} label="Total Productos" value={totalProductos} sub="en catálogo activo" glow="cyan" delay={0} />
           </div>

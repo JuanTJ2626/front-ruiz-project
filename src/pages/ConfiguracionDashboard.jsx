@@ -152,7 +152,7 @@ const ConfiguracionDashboard = () => {
 
   return (
     <TooltipProvider>
-    <PageLayout title="Configuración" subtitle="Administra tu negocio, usuarios y preferencias." badge="Ajustes"
+    <PageLayout title="Configuración" subtitle="Administra tu negocio, usuarios y preferencias."
       actions={
         <Button onClick={guardarNegocio} disabled={savingNegocio} className="gap-2 rounded-xl shadow-md">
           {savingNegocio ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
@@ -160,7 +160,7 @@ const ConfiguracionDashboard = () => {
         </Button>
       }
     >
-      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <AuroraStatCard icon={Shield}    label="Rol Actual" value={rol}              sub="nivel de acceso" glow="violet" delay={160} />
         <AuroraStatCard icon={User}      label="Usuario"    value={username}         sub="sesión activa"   glow="cyan"   delay={80} />
         {isAdmin && <AuroraStatCard icon={Users}     label="Usuarios"  value={usuarios.length} sub="en el negocio" glow="emerald" delay={240} />}
@@ -195,14 +195,57 @@ const ConfiguracionDashboard = () => {
                       <Input value={formNegocio.direccion || ''} onChange={e => updateField('direccion', e.target.value)} className="h-10 rounded-xl" placeholder="Ferretería, Abarrotes..." />
                     </div>
                     <div className="space-y-2">
-                      <Label>Logo</Label>
-                      <div className="flex items-center gap-3">
-                        {formNegocio.logoUrl && <img src={formNegocio.logoUrl} alt="logo" className="h-10 w-10 rounded-lg object-cover border border-white/10" />}
-                        <label className={`flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-muted-foreground hover:bg-white/10 ${uploadingLogo ? 'opacity-60' : ''}`}>
-                          {uploadingLogo ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-                          {uploadingLogo ? 'Subiendo...' : formNegocio.logoUrl ? 'Cambiar logo' : 'Subir logo'}
-                          <input type="file" accept="image/*" className="hidden" disabled={uploadingLogo} onChange={e => handleSubirLogo(e.target.files?.[0])} />
-                        </label>
+                      <Label>Logo del negocio</Label>
+                      {/* Tarjeta de logo */}
+                      <div className="relative flex flex-col items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+                        {formNegocio.logoUrl ? (
+                          /* Preview del logo actual */
+                          <div className="relative">
+                            <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-2xl border-2 border-white/10 bg-white/5 shadow-lg">
+                              <img src={formNegocio.logoUrl} alt="logo del negocio" className="h-full w-full object-contain p-2" />
+                            </div>
+                            {/* Badge de estado */}
+                            <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-400">
+                              Logo activo
+                            </span>
+                          </div>
+                        ) : (
+                          /* Placeholder cuando no hay logo */
+                          <div className="flex h-28 w-28 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-white/10 bg-white/[0.02]">
+                            <Upload size={24} className="text-muted-foreground/40" />
+                            <span className="text-[10px] text-muted-foreground/40">Sin logo</span>
+                          </div>
+                        )}
+
+                        {/* Botones de acción */}
+                        <div className="flex w-full flex-col gap-2">
+                          <label className={cn(
+                            'flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-400',
+                            uploadingLogo && 'cursor-not-allowed opacity-60'
+                          )}>
+                            {uploadingLogo ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
+                            {uploadingLogo ? 'Subiendo...' : formNegocio.logoUrl ? 'Cambiar logo' : 'Subir logo'}
+                            <input
+                              type="file"
+                              accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                              className="hidden"
+                              disabled={uploadingLogo}
+                              onChange={e => handleSubirLogo(e.target.files?.[0])}
+                            />
+                          </label>
+                          {formNegocio.logoUrl && (
+                            <button
+                              type="button"
+                              onClick={() => updateField('logoUrl', '')}
+                              className="flex items-center justify-center gap-2 rounded-xl border border-red-500/20 bg-red-500/5 py-2 text-xs font-medium text-red-400/70 transition-all hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-400"
+                            >
+                              <X size={13} /> Quitar logo
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-center text-[11px] text-muted-foreground/50">
+                          PNG, JPG, WebP o SVG · Máx. 2MB
+                        </p>
                       </div>
                     </div>
                   </div>

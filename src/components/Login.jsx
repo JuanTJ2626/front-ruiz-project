@@ -2,28 +2,38 @@ import { useState, useRef, useEffect } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Sphere, MeshDistortMaterial } from '@react-three/drei';
+import { Box, MeshDistortMaterial, Environment } from '@react-three/drei';
 import { Eye, EyeOff } from 'lucide-react';
 import { loginUser, setAuthData } from '../services/authService';
 import { toast } from 'sonner';
 import { cn } from '../lib/utils';
+import { APP_NAME, APP_LOGO } from '../assets/brand';
 
-/* ── Esfera 3D animada (diseño original) ─────────────────── */
+/* ── Cubos Metálicos (Ligeramente Gelatinosos) ───────────── */
 const AnimatedShape = ({ color, distort, speed, position, scale }) => {
-  const meshRef = useRef();
+  const groupRef = useRef();
+  
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
-    if (meshRef.current) {
-      meshRef.current.rotation.y = Math.sin(t / 4) / 2;
-      meshRef.current.rotation.z = t / 5;
-      meshRef.current.position.y = position[1] + Math.sin(t / 2) * 0.5;
+    if (groupRef.current) {
+      // Rotación y levitación suave
+      groupRef.current.rotation.y = Math.sin(t / 4) / 2;
+      groupRef.current.rotation.z = t / 5;
+      groupRef.current.position.y = position[1] + Math.sin(t / 2) * 0.4;
     }
   });
+
   return (
-    <group position={position} scale={scale}>
-      <Sphere ref={meshRef} args={[1.5, 64, 64]}>
-        <MeshDistortMaterial color={color} distort={distort} speed={speed} roughness={0.2} metalness={0.8} />
-      </Sphere>
+    <group ref={groupRef} position={position} scale={scale}>
+      <Box args={[2.2, 2.2, 2.2, 32, 32, 32]}>
+        <MeshDistortMaterial 
+          color={color}
+          distort={distort}
+          speed={speed}
+          roughness={0.15}
+          metalness={1}
+        />
+      </Box>
     </group>
   );
 };
@@ -34,23 +44,28 @@ const Background3D = () => (
       <ambientLight intensity={0.5} />
       <directionalLight position={[10, 10, 5]} intensity={1.5} color="#ffffff" />
       <directionalLight position={[-10, -10, -5]} intensity={2} color="#1E3A8A" />
-      <AnimatedShape color="#1E3A8A" distort={0.5} speed={1.5} position={[2.5, 0, -2]} scale={1.5} />
-      <AnimatedShape color="#722F37" distort={0.6} speed={2} position={[-3, 1.5, -4]} scale={1.3} />
-      <AnimatedShape color="#0f172a" distort={0.4} speed={1} position={[-2, -2, -1]} scale={1} />
+      
+      {/* El mapa de entorno es el secreto para que el material se vea 100% metálico */}
+      <Environment preset="city" />
+
+      {/* Aumento sutil de tamaño */}
+      <AnimatedShape color="#1E3A8A" distort={0.12} speed={1.2} position={[2.5, 0, -2]} scale={1.25} />
+      <AnimatedShape color="#1e40af" distort={0.15} speed={1.5} position={[-3, 1.5, -4]} scale={1.1} />
+      <AnimatedShape color="#0f172a" distort={0.1} speed={1} position={[-2, -2, -1]} scale={0.85} />
     </Canvas>
   </div>
 );
 
 /* ── Login principal ─────────────────────────────────────── */
 const Login = ({ onLogin }) => {
-  const [username, setUsername]   = useState('');
-  const [password, setPassword]   = useState('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const [loading, setLoading]     = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const containerRef = useRef(null);
-  const cardRef      = useRef(null);
+  const cardRef = useRef(null);
 
   // Aplica el tema guardado al cargar el componente
   useEffect(() => {
@@ -83,8 +98,8 @@ const Login = ({ onLogin }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!username.trim()) return toast.error('Ingresa tu nombre de usuario');
-    if (!password)        return toast.error('Ingresa tu contraseña');
-    
+    if (!password) return toast.error('Ingresa tu contraseña');
+
     setLoading(true);
     try {
       const data = await loginUser({ username: username.trim(), password });
@@ -118,20 +133,28 @@ const Login = ({ onLogin }) => {
 
       <div ref={cardRef} className="login-card mx-auto shrink-0 relative z-10">
         {/* Logo */}
-        <div className="gsap-stagger mb-6 flex items-center justify-center opacity-90 drop-shadow-[0_4px_6px_rgba(0,0,0,0.05)]">
-          <span className="font-heading text-[1.1rem] font-bold tracking-[0.15em] whitespace-nowrap bg-gradient-to-br from-teal-600 to-cyan-500 bg-clip-text text-transparent">
-            INVENT-PRO
-          </span>
+        <div className="gsap-stagger mb-4 flex items-center justify-center">
+          {APP_LOGO ? (
+            <img
+              src={APP_LOGO}
+              alt={APP_NAME}
+              className="h-32 w-auto max-w-[380px] object-contain"
+            />
+          ) : (
+            <span className="font-heading text-[1.1rem] font-bold tracking-[0.15em] whitespace-nowrap bg-gradient-to-br from-teal-600 to-cyan-500 bg-clip-text text-transparent">
+              {APP_NAME}
+            </span>
+          )}
         </div>
 
-        <h1 className="gsap-stagger mb-2 text-center font-heading text-[1.75rem] font-semibold tracking-tight text-slate-900 dark:text-white">
+        <h1 className="gsap-stagger mb-1 text-center font-heading text-[1.5rem] font-semibold tracking-tight text-slate-900 dark:text-white">
           Inicia sesión en la plataforma
         </h1>
-        <p className="gsap-stagger mb-10 text-center text-[0.95rem] text-slate-500 dark:text-slate-400">
+        <p className="gsap-stagger mb-6 text-center text-[0.9rem] text-slate-500 dark:text-slate-400">
           Gestiona tu inventario de forma eficiente
         </p>
 
-        <form onSubmit={handleSubmit} className="flex w-full flex-col gap-5">
+        <form onSubmit={handleSubmit} className="flex w-full flex-col gap-4">
           {/* Usuario */}
           <div className="gsap-stagger relative w-full">
             <input
@@ -172,7 +195,7 @@ const Login = ({ onLogin }) => {
             type="submit"
             disabled={loading}
             className={cn(
-              'gsap-stagger group mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-0 py-4 text-base font-semibold text-white shadow-[0_4px_14px_rgba(15,23,42,0.2)] transition-all duration-300',
+              'gsap-stagger group mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-0 py-3.5 text-base font-semibold text-white shadow-[0_4px_14px_rgba(15,23,42,0.2)] transition-all duration-300',
               'bg-slate-900 hover:bg-slate-800 hover:shadow-[0_6px_20px_rgba(15,23,42,0.3)]',
               'dark:bg-gradient-to-r dark:from-cyan-600 dark:to-emerald-600 dark:hover:from-cyan-500 dark:hover:to-emerald-500 dark:shadow-[0_4px_14px_rgba(6,182,212,0.3)]',
               loading && 'cursor-not-allowed opacity-70'
