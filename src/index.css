@@ -666,3 +666,12 @@
 .sidebar-icon-float {
   animation: sidebar-icon-float 6.3s ease-in-out infinite;
 }
+
+/* Oculta scrollbar manteniendo el scroll funcional */
+.scrollbar-none {
+  scrollbar-width: none;       /* Firefox */
+  -ms-overflow-style: none;    /* IE/Edge */
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;               /* Chrome/Safari */
+}

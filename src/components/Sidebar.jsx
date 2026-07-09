@@ -270,7 +270,7 @@ const Sidebar = ({ onLogout }) => {
           </div>
 
           {/* ── Nav ── */}
-          <nav className="flex flex-1 md:flex-col flex-row items-center md:items-stretch justify-evenly md:justify-start gap-[4px] md:gap-[3px] px-2 py-2 md:overflow-y-auto md:px-3 md:py-1 w-full">
+          <nav className="flex flex-1 md:flex-col flex-row items-center md:items-stretch md:justify-start gap-[4px] md:gap-[3px] px-2 py-2 md:overflow-y-auto md:px-3 md:py-1 w-full overflow-x-auto overflow-y-hidden scrollbar-none">
             {navItems.map((item) => {
               const isActive = activePage === item.id;
               return (
@@ -278,7 +278,7 @@ const Sidebar = ({ onLogout }) => {
                   key={item.id}
                   onClick={(e) => { e.stopPropagation(); navigate(`/${item.id}`); window.innerWidth < 768 && setIsHovered(false); }}
                   className={cn(
-                    'group relative flex cursor-pointer md:items-center flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 rounded-[18px] md:rounded-2xl px-2 py-2 md:px-3 md:py-[10px] text-[10px] md:text-[0.88rem] font-semibold transition-all duration-200 select-none flex-1 md:flex-none',
+                    'group relative flex cursor-pointer md:items-center flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 rounded-[18px] md:rounded-2xl px-3 py-2 md:px-3 md:py-[10px] text-[10px] md:text-[0.88rem] font-semibold transition-all duration-200 select-none shrink-0 md:shrink md:flex-none min-w-[56px] md:min-w-0',
                     isActive
                       ? 'bg-gradient-to-r md:from-cyan-500/18 md:to-emerald-500/10 from-cyan-500/25 to-emerald-500/25 text-teal-300 md:shadow-[inset_0_0_0_1px_rgba(6,182,212,0.22)]'
                       : 'text-white/50 hover:bg-white/[0.06] hover:text-white/90'
