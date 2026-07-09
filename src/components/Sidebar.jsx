@@ -9,7 +9,7 @@ import { useApp } from '../context/AppContext';
 import { useRol } from '../hooks/useRol';
 import { APP_NAME, APP_LOGO, APP_LOGO_WHITE, APP_ICON } from '../assets/brand';
 
-const LoginStyleBubble = ({ isHovered }) => {
+const LoginStyleBubble = ({ isHovered, iconRef }) => {
   const meshRef = useRef();
 
   useFrame((state) => {
@@ -19,7 +19,19 @@ const LoginStyleBubble = ({ isHovered }) => {
     meshRef.current.scale.setScalar(THREE.MathUtils.lerp(meshRef.current.scale.x, targetScale, 0.08));
     meshRef.current.rotation.y = Math.sin(t / 4) / 2;
     meshRef.current.rotation.z = t / 5;
-    meshRef.current.position.y = Math.sin(t / 2) * 0.5;
+
+    const floatY = Math.sin(t / 2) * 0.5;
+    meshRef.current.position.y = floatY;
+
+    // Sincronización perfecta del DOM con el reloj de WebGL
+    if (iconRef?.current) {
+      if (!isHovered) {
+        // Multiplicamos por -14 para convertir la escala 3D a pixeles CSS invertidos (arriba es negativo en CSS)
+        iconRef.current.style.transform = `translateY(${floatY * -14}px) scale(1)`;
+      } else {
+        iconRef.current.style.transform = `translateY(0px) scale(0.5)`;
+      }
+    }
   });
 
   return (
@@ -68,11 +80,12 @@ const Sidebar = ({ onLogout }) => {
     }
   }, [isDarkMode]);
 
+  // Ya no usamos GSAP para el float, el componente LoginStyleBubble actualiza el DOM directamente en cada frame
   useEffect(() => {
     gsap.killTweensOf([iconRef.current, contentRef.current]);
 
     if (isHovered) {
-      gsap.to(iconRef.current, { opacity: 0, scale: 0.5, duration: 0.3 });
+      gsap.to(iconRef.current, { opacity: 0, duration: 0.3 }); // El scale y 'y' lo maneja useFrame ahora
       gsap.to(contentRef.current, {
         opacity: 1,
         scale: 1,
@@ -88,17 +101,46 @@ const Sidebar = ({ onLogout }) => {
         pointerEvents: 'none',
         duration: 0.3
       });
-      gsap.to(iconRef.current, { opacity: 1, scale: 1, duration: 0.4, delay: 0.2 });
+      gsap.to(iconRef.current, {
+        opacity: 1,
+        duration: 0.4,
+        delay: 0.2
+      });
     }
   }, [isHovered]);
 
   const allNavItems = [
-    { id: 'dashboard', label: 'Dashboard', roles: ['ADMIN', 'EMPLEADO'], icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9" rx="1" /><rect x="14" y="3" width="7" height="5" rx="1" /><rect x="14" y="12" width="7" height="9" rx="1" /><rect x="3" y="16" width="7" height="5" rx="1" /></svg> },
-    { id: 'productos', label: 'Productos', roles: ['ADMIN', 'EMPLEADO'], icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg> },
-    { id: 'stock', label: 'Stock', roles: ['ADMIN', 'EMPLEADO'], icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg> },
-    { id: 'proveedores', label: 'Proveedores', roles: ['ADMIN'], icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" /><polygon points="16 8 20 8 23 11 23 16 16 16 16 8" /><circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" /></svg> },
-    { id: 'reportes', label: 'Reportes', roles: ['ADMIN'], icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg> },
-    { id: 'configuracion', label: 'Configuración', roles: ['ADMIN'], icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg> },
+    {
+      id: 'dashboard', label: 'Dashboard', roles: ['ADMIN', 'EMPLEADO'],
+      iconClass: 'nav-icon-dashboard',
+      icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9" rx="1" /><rect x="14" y="3" width="7" height="5" rx="1" /><rect x="14" y="12" width="7" height="9" rx="1" /><rect x="3" y="16" width="7" height="5" rx="1" /></svg>
+    },
+    {
+      id: 'productos', label: 'Productos', roles: ['ADMIN', 'EMPLEADO'],
+      iconClass: 'nav-icon-productos',
+      icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg>
+    },
+    {
+      id: 'stock', label: 'Stock', roles: ['ADMIN', 'EMPLEADO'],
+      iconClass: 'nav-icon-stock',
+      icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg>
+    },
+
+    {
+      id: 'proveedores', label: 'Proveedores', roles: ['ADMIN'],
+      iconClass: 'nav-icon-proveedores',
+      icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" /><polygon points="16 8 20 8 23 11 23 16 16 16 16 8" /><circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" /></svg>
+    },
+    {
+      id: 'reportes', label: 'Reportes', roles: ['ADMIN'],
+      iconClass: 'nav-icon-reportes',
+      icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>
+    },
+    {
+      id: 'configuracion', label: 'Configuración', roles: ['ADMIN'],
+      iconClass: 'nav-icon-configuracion',
+      icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
+    },
   ];
 
   const navItems = allNavItems.filter(item => item.roles.includes(rol));
@@ -160,13 +202,13 @@ const Sidebar = ({ onLogout }) => {
             <ambientLight intensity={0.5} />
             <directionalLight position={[10, 10, 5]} intensity={1.5} color="#ffffff" />
             <directionalLight position={[-10, -10, -5]} intensity={2} color="#1E3A8A" />
-            <LoginStyleBubble isHovered={isHovered} />
+            <LoginStyleBubble isHovered={isHovered} iconRef={iconRef} />
           </Canvas>
         </div>
 
         <div
           ref={iconRef}
-          className="pointer-events-none absolute top-1/2 left-1/2 z-20 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center gap-2 text-white drop-shadow-[0_2px_5px_rgba(0,0,0,0.5)] transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.175,0.885,0.32,1.275)]"
+          className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 text-white drop-shadow-[0_2px_5px_rgba(0,0,0,0.5)] transition-[opacity] duration-300 ease-[cubic-bezier(0.175,0.885,0.32,1.275)]"
         >
           <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="3" y1="12" x2="21" y2="12"></line>
@@ -244,6 +286,7 @@ const Sidebar = ({ onLogout }) => {
                 >
                   <span className={cn(
                     'nav-icon flex w-[18px] md:w-[18px] shrink-0 items-center justify-center transition-colors duration-200',
+                    item.iconClass,
                     isActive ? 'text-teal-400' : 'text-white/40 group-hover:text-white/70'
                   )}>
                     {item.icon}

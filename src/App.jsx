@@ -7,7 +7,6 @@ import Dashboard from './pages/Dashboard';
 import ProductosPage from './pages/ProductosPage';
 import StockDashboard from './pages/StockDashboard';
 import ProveedoresDashboard from './pages/ProveedoresDashboard';
-import ClientesDashboard from './pages/ClientesDashboard';
 import ReportesDashboard from './pages/ReportesDashboard';
 import ConfiguracionDashboard from './pages/ConfiguracionDashboard';
 import ChatbotWidget from './components/ChatbotWidget';
@@ -45,7 +44,6 @@ function AppShell() {
           <Route path="/productos" element={<ProductosPage />} />
           <Route path="/stock" element={<StockDashboard />} />
           <Route path="/proveedores" element={<RequireAdmin><ProveedoresDashboard /></RequireAdmin>} />
-          <Route path="/clientes" element={<RequireAdmin><ClientesDashboard /></RequireAdmin>} />
           <Route path="/reportes" element={<RequireAdmin><ReportesDashboard /></RequireAdmin>} />
           <Route path="/configuracion" element={<RequireAdmin><ConfiguracionDashboard /></RequireAdmin>} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

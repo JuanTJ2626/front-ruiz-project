@@ -1,9 +1,9 @@
-import { useRef, useMemo } from 'react'
+import { useRef, useMemo, useState, useEffect } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 
 /* ── Partículas flotantes con conexiones ─────────────────────── */
-const Particles = ({ count = 120, spread = 8 }) => {
+const Particles = ({ count = 120, spread = 8, isDark = false }) => {
   const meshRef = useRef()
   const lineRef = useRef()
 
@@ -73,6 +73,11 @@ const Particles = ({ count = 120, spread = 8 }) => {
     lineRef.current.geometry.attributes.position.needsUpdate = true
   })
 
+  // Colores dinámicos según el tema
+  const pointColor = isDark ? "#60a5fa" : "#3b82f6" // Azul más brillante en modo oscuro
+  const lineColor  = isDark ? "#38bdf8" : "#1E3A8A" // Cyan visible en modo oscuro, azul oscuro en claro
+  const lineOpacity = isDark ? 0.4 : 0.3
+
   return (
     <>
       {/* Puntos / partículas */}
@@ -87,9 +92,9 @@ const Particles = ({ count = 120, spread = 8 }) => {
         </bufferGeometry>
         <pointsMaterial
           size={0.045}
-          color="#a78bfa"
+          color={pointColor}
           transparent
-          opacity={0.75}
+          opacity={isDark ? 1 : 0.85}
           sizeAttenuation
         />
       </points>
@@ -105,9 +110,9 @@ const Particles = ({ count = 120, spread = 8 }) => {
           />
         </bufferGeometry>
         <lineBasicMaterial
-          color="#7c3aed"
+          color={lineColor}
           transparent
-          opacity={0.18}
+          opacity={lineOpacity}
         />
       </lineSegments>
     </>
@@ -116,6 +121,25 @@ const Particles = ({ count = 120, spread = 8 }) => {
 
 /* ── Export: canvas de pantalla completa ─────────────────────── */
 export default function ParticleField({ className = '' }) {
+  const [isDark, setIsDark] = useState(false)
+
+  useEffect(() => {
+    // Detectar si está en dark mode inicialmente
+    setIsDark(document.documentElement.classList.contains('dark'))
+
+    // Escuchar cambios en la clase de html
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'class') {
+          setIsDark(document.documentElement.classList.contains('dark'))
+        }
+      })
+    })
+
+    observer.observe(document.documentElement, { attributes: true })
+    return () => observer.disconnect()
+  }, [])
+
   return (
     <Canvas
       className={className}
@@ -123,7 +147,7 @@ export default function ParticleField({ className = '' }) {
       gl={{ alpha: true, antialias: false, powerPreference: 'low-power' }}
       dpr={[1, 1.5]}
     >
-      <Particles count={100} spread={9} />
+      <Particles count={100} spread={9} isDark={isDark} />
     </Canvas>
   )
 }

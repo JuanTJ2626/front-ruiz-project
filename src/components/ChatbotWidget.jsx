@@ -214,29 +214,29 @@ function ChatbotWidget() {
         }} />
         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <svg width="44" height="46" viewBox="0 0 42 46" fill="none">
-            <rect className="robot-arm-l" x="1" y="28" width="8" height="6" rx="3" fill="#d1d1d6"/>
-            <rect className="robot-arm-r" x="33" y="28" width="8" height="6" rx="3" fill="#d1d1d6"/>
-            <rect x="9" y="27" width="24" height="15" rx="5" fill="#d1d1d6"/>
-            <circle className="robot-chest" cx="21" cy="34" r="4" fill="#0a84ff"/>
-            <circle cx="21" cy="34" r="1.8" fill="white"/>
-            <line x1="11" y1="31" x2="15" y2="31" stroke="#aeaeb2" strokeWidth="1.2" strokeLinecap="round"/>
-            <line x1="27" y1="31" x2="31" y2="31" stroke="#aeaeb2" strokeWidth="1.2" strokeLinecap="round"/>
-            <rect x="18" y="24" width="6" height="4" rx="2" fill="#c7c7cc"/>
+            <rect className="robot-arm-l" x="1" y="28" width="8" height="6" rx="3" fill="#d1d1d6" />
+            <rect className="robot-arm-r" x="33" y="28" width="8" height="6" rx="3" fill="#d1d1d6" />
+            <rect x="9" y="27" width="24" height="15" rx="5" fill="#d1d1d6" />
+            <circle className="robot-chest" cx="21" cy="34" r="4" fill="#0a84ff" />
+            <circle cx="21" cy="34" r="1.8" fill="white" />
+            <line x1="11" y1="31" x2="15" y2="31" stroke="#aeaeb2" strokeWidth="1.2" strokeLinecap="round" />
+            <line x1="27" y1="31" x2="31" y2="31" stroke="#aeaeb2" strokeWidth="1.2" strokeLinecap="round" />
+            <rect x="18" y="24" width="6" height="4" rx="2" fill="#c7c7cc" />
             <g className="robot-head">
-              <line x1="21" y1="1" x2="21" y2="7" stroke="rgba(255,255,255,0.5)" strokeWidth="1.8" strokeLinecap="round"/>
-              <circle className="robot-antenna-dot" cx="21" cy="1" r="2.2" fill="#0a84ff"/>
-              <rect x="7" y="7" width="28" height="19" rx="6" fill="#e5e5ea"/>
+              <line x1="21" y1="1" x2="21" y2="7" stroke="rgba(255,255,255,0.5)" strokeWidth="1.8" strokeLinecap="round" />
+              <circle className="robot-antenna-dot" cx="21" cy="1" r="2.2" fill="#0a84ff" />
+              <rect x="7" y="7" width="28" height="19" rx="6" fill="#e5e5ea" />
               <g className="robot-eye">
-                <rect x="10.5" y="11.5" width="9" height="9" rx="3" fill="#1c1c1e"/>
-                <circle cx="12.5" cy="13.5" r="2.2" fill="white" fillOpacity="0.95"/>
-                <circle className="robot-pupil" cx="12.5" cy="13.5" r="1.1" fill="#0a84ff"/>
+                <rect x="10.5" y="11.5" width="9" height="9" rx="3" fill="#1c1c1e" />
+                <circle cx="12.5" cy="13.5" r="2.2" fill="white" fillOpacity="0.95" />
+                <circle className="robot-pupil" cx="12.5" cy="13.5" r="1.1" fill="#0a84ff" />
               </g>
               <g className="robot-eye">
-                <rect x="22.5" y="11.5" width="9" height="9" rx="3" fill="#1c1c1e"/>
-                <circle cx="24.5" cy="13.5" r="2.2" fill="white" fillOpacity="0.95"/>
-                <circle className="robot-pupil" cx="24.5" cy="13.5" r="1.1" fill="#0a84ff"/>
+                <rect x="22.5" y="11.5" width="9" height="9" rx="3" fill="#1c1c1e" />
+                <circle cx="24.5" cy="13.5" r="2.2" fill="white" fillOpacity="0.95" />
+                <circle className="robot-pupil" cx="24.5" cy="13.5" r="1.1" fill="#0a84ff" />
               </g>
-              <rect className="robot-mouth" x="14" y="23" width="14" height="2.5" rx="1.2" fill="#aeaeb2"/>
+              <rect className="robot-mouth" x="14" y="23" width="14" height="2.5" rx="1.2" fill="#aeaeb2" />
             </g>
           </svg>
         </div>
