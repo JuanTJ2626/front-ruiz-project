@@ -3,32 +3,35 @@ import { useApp } from '../context/AppContext';
 
 function ChatbotWidget() {
   const { negocioActivo } = useApp();
-  const inicializado = useRef(false);
   const scriptsLoaded = useRef(false);
+  const listenerRegistrado = useRef(false);
   const [chatOpen, setChatOpen] = useState(false);
 
-  const rol = localStorage.getItem('rol') || 'EMPLEADO';
-  const esAdmin = rol === 'ADMIN';
+  // Leer rol de forma reactiva — espera a que localStorage tenga el valor
+  const [esAdmin, setEsAdmin] = useState(false);
+  useEffect(() => {
+    const verificar = () => {
+      const rol = localStorage.getItem('rol');
+      setEsAdmin(rol === 'ADMIN');
+    };
+    verificar();
+    // Por si acaso el componente monta antes de que setAuthData termine
+    const t = setTimeout(verificar, 500);
+    return () => clearTimeout(t);
+  }, []);
 
-  // ── EMPLEADO: ocultar todo lo de Botpress ──────────────────────────────────
+  // ── EMPLEADO: ocultar todo lo de Botpress ─────────────────────────────────
   useEffect(() => {
     if (esAdmin) return;
-
     const ocultarTodo = () => {
       if (!document.getElementById('bp-empleado-hide')) {
         const style = document.createElement('style');
         style.id = 'bp-empleado-hide';
         style.textContent = `
-          #bp-web-widget,
-          #bp-web-widget-container,
-          [id^="bp-web"],
-          [id*="botpress"],
-          [class*="bpFab"],
-          [class*="bp-fab"],
-          [class*="webchat"],
-          iframe[id^="bp-"],
-          iframe[src*="botpress"],
-          iframe[src*="bpcontent"] {
+          #bp-web-widget, #bp-web-widget-container,
+          [id^="bp-web"], [id*="botpress"],
+          [class*="bpFab"], [class*="bp-fab"], [class*="webchat"],
+          iframe[id^="bp-"], iframe[src*="botpress"], iframe[src*="bpcontent"] {
             display: none !important;
             visibility: hidden !important;
             opacity: 0 !important;
@@ -41,19 +44,14 @@ function ChatbotWidget() {
         .querySelectorAll('[id^="bp-"], [id*="botpress"], iframe[src*="botpress"], iframe[src*="bpcontent"]')
         .forEach(el => { el.style.display = 'none'; });
     };
-
     ocultarTodo();
     const intervalo = setInterval(ocultarTodo, 500);
     const observer = new MutationObserver(ocultarTodo);
     observer.observe(document.body, { childList: true, subtree: true });
-
-    return () => {
-      clearInterval(intervalo);
-      observer.disconnect();
-    };
+    return () => { clearInterval(intervalo); observer.disconnect(); };
   }, [esAdmin]);
 
-  // ── ADMIN: cargar scripts de Botpress ─────────────────────────────────────
+  // ── ADMIN: cargar scripts de Botpress ────────────────────────────────────
   useEffect(() => {
     if (!esAdmin || scriptsLoaded.current) return;
     const script1 = document.createElement('script');
@@ -69,7 +67,7 @@ function ChatbotWidget() {
     scriptsLoaded.current = true;
   }, [esAdmin]);
 
-  // ── ADMIN: ocultar el fab nativo de Botpress (usamos nuestro robot) ────────
+  // ── ADMIN: ocultar fab nativo de Botpress ────────────────────────────────
   useEffect(() => {
     if (!esAdmin) return;
     const timer = setTimeout(() => {
@@ -78,10 +76,8 @@ function ChatbotWidget() {
         style.id = 'bp-hide-fab';
         style.textContent = `
           #bp-web-widget-container > *:first-child,
-          [class*="bpFab"],
-          [class*="bp-fab"],
-          [class*="webchat-fab"],
-          [class*="Fab"] {
+          [class*="bpFab"], [class*="bp-fab"],
+          [class*="webchat-fab"], [class*="Fab"] {
             opacity: 0 !important;
             pointer-events: none !important;
           }
@@ -92,29 +88,38 @@ function ChatbotWidget() {
     return () => clearTimeout(timer);
   }, [esAdmin]);
 
-  // ── ADMIN: inicializar bot con negocio activo ──────────────────────────────
+  // ── ADMIN: enviar __INIT__ cuando Botpress esté listo ────────────────────
   useEffect(() => {
-    if (!esAdmin || !negocioActivo) return;
-    const intentar = setInterval(() => {
-      if (!window.botpress?.sendMessage) return;
-      if (!inicializado.current) {
-        window.botpress.on('ready', () => {
-          const nId = localStorage.getItem('negocioId');
-          if (nId) window.botpress.sendMessage(`__INIT__:${nId}`);
-        });
-        inicializado.current = true;
+    if (!esAdmin) return;
+
+    const enviarInit = () => {
+      const nId = localStorage.getItem('negocioId');
+      if (nId && window.botpress?.sendMessage) {
+        window.botpress.sendMessage(`__INIT__:${nId}`);
       }
-      clearInterval(intentar);
+    };
+
+    // Intenta registrar el listener 'ready' una sola vez
+    const intentar = setInterval(() => {
+      if (!window.botpress) return;
+
+      if (!listenerRegistrado.current) {
+        // 'ready' dispara cuando el bot termina de cargar por primera vez
+        window.botpress.on('ready', enviarInit);
+        listenerRegistrado.current = true;
+      }
+
+      // Si ya está listo (cargado antes de registrar el listener), manda directo
+      if (window.botpress.sendMessage) {
+        enviarInit();
+        clearInterval(intentar);
+      }
     }, 300);
+
     return () => clearInterval(intentar);
   }, [esAdmin, negocioActivo]);
 
-  useEffect(() => {
-    if (!esAdmin || !negocioActivo || !window.botpress?.sendMessage) return;
-    window.botpress.sendMessage(`__INIT__:${negocioActivo}`);
-  }, [esAdmin, negocioActivo]);
-
-  // ── Abrir/cerrar el chat de Botpress desde nuestro botón ──────────────────
+  // ── Abrir/cerrar chat ────────────────────────────────────────────────────
   const toggleChat = () => {
     if (window.botpress?.open && window.botpress?.close) {
       chatOpen ? window.botpress.close() : window.botpress.open();
@@ -124,7 +129,6 @@ function ChatbotWidget() {
     setChatOpen(prev => !prev);
   };
 
-  // No renderizar nada para EMPLEADO
   if (!esAdmin) return null;
 
   return (
@@ -154,14 +158,14 @@ function ChatbotWidget() {
           55%,100% { transform: translate(0, 0); }
         }
         @keyframes waveArmLeft {
-          0%, 60%, 100%  { transform: rotate(0deg); }
-          65%, 75%  { transform: rotate(-20deg) translateY(-3px); }
-          70%       { transform: rotate(-28deg) translateY(-5px); }
+          0%, 60%, 100% { transform: rotate(0deg); }
+          65%, 75% { transform: rotate(-20deg) translateY(-3px); }
+          70%      { transform: rotate(-28deg) translateY(-5px); }
         }
         @keyframes waveArmRight {
-          0%, 60%, 100%  { transform: rotate(0deg); }
-          65%, 75%  { transform: rotate(20deg) translateY(-3px); }
-          70%       { transform: rotate(28deg) translateY(-5px); }
+          0%, 60%, 100% { transform: rotate(0deg); }
+          65%, 75% { transform: rotate(20deg) translateY(-3px); }
+          70%      { transform: rotate(28deg) translateY(-5px); }
         }
         @keyframes antennaPulse {
           0%, 100% { r: 2.2; opacity: 1; fill: #0a84ff; }
@@ -176,54 +180,39 @@ function ChatbotWidget() {
           0%, 100% { r: 4; fill: #0a84ff; }
           50%      { r: 4.8; fill: #22d3ee; }
         }
-        .robot-root  { animation: robotFloat 2.8s ease-in-out infinite; }
-        .robot-head  { animation: headLook 7s ease-in-out infinite; transform-origin: 21px 17.5px; }
-        .robot-eye   { animation: blinkEye 4.5s infinite; transform-origin: center; }
-        .robot-pupil { animation: pupilTrack 7s ease-in-out infinite; }
-        .robot-arm-l { animation: waveArmLeft 7s ease-in-out infinite; transform-origin: 8px 32px; }
-        .robot-arm-r { animation: waveArmRight 7s ease-in-out infinite; transform-origin: 34px 32px; }
-        .robot-antenna-dot { animation: antennaPulse 2s ease-in-out infinite; }
-        .robot-chest { animation: chestPulse 1.8s ease-in-out infinite; }
-        .robot-shadow { animation: shadowPulse 2.8s ease-in-out infinite; }
+        .robot-root       { animation: robotFloat 2.8s ease-in-out infinite; }
+        .robot-head       { animation: headLook 7s ease-in-out infinite; transform-origin: 21px 17.5px; }
+        .robot-eye        { animation: blinkEye 4.5s infinite; transform-origin: center; }
+        .robot-pupil      { animation: pupilTrack 7s ease-in-out infinite; }
+        .robot-arm-l      { animation: waveArmLeft 7s ease-in-out infinite; transform-origin: 8px 32px; }
+        .robot-arm-r      { animation: waveArmRight 7s ease-in-out infinite; transform-origin: 34px 32px; }
+        .robot-antenna-dot{ animation: antennaPulse 2s ease-in-out infinite; }
+        .robot-chest      { animation: chestPulse 1.8s ease-in-out infinite; }
+        .robot-shadow     { animation: shadowPulse 2.8s ease-in-out infinite; }
       `}</style>
 
-      {/* Sombra en el suelo */}
-      <div
-        className="robot-shadow"
-        style={{
-          position: 'fixed', bottom: '8px', right: '26px',
-          width: '60px', height: '10px', borderRadius: '50%',
-          background: 'rgba(0,0,0,0.3)', filter: 'blur(6px)',
-          zIndex: 999998, pointerEvents: 'none',
-        }}
-      />
+      <div className="robot-shadow" style={{
+        position: 'fixed', bottom: '8px', right: '26px',
+        width: '60px', height: '10px', borderRadius: '50%',
+        background: 'rgba(0,0,0,0.3)', filter: 'blur(6px)',
+        zIndex: 999998, pointerEvents: 'none',
+      }} />
 
-      {/* Botón robot — abre/cierra el chat de Botpress */}
-      <div
-        className="robot-root"
-        onClick={toggleChat}
-        title="Abrir asistente"
-        style={{
-          position: 'fixed', bottom: '16px', right: '16px',
-          width: '76px', height: '76px', borderRadius: '50%',
-          zIndex: 999999, cursor: 'pointer',
-          background: 'linear-gradient(160deg, #1c1c1e 0%, #2c2c2e 100%)',
-          outline: '1px solid rgba(255,255,255,0.15)',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.2)',
-        }}
-      >
-        {/* Reflejo de vidrio */}
+      <div className="robot-root" onClick={toggleChat} title="Abrir asistente" style={{
+        position: 'fixed', bottom: '16px', right: '16px',
+        width: '76px', height: '76px', borderRadius: '50%',
+        zIndex: 999999, cursor: 'pointer',
+        background: 'linear-gradient(160deg, #1c1c1e 0%, #2c2c2e 100%)',
+        outline: '1px solid rgba(255,255,255,0.15)',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.2)',
+      }}>
         <div style={{
           position: 'absolute', top: '6px', left: '12px', right: '12px',
           height: '28px', borderRadius: '50%',
           background: 'linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 100%)',
           pointerEvents: 'none',
         }} />
-
-        <div style={{
-          position: 'absolute', inset: 0,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <svg width="44" height="46" viewBox="0 0 42 46" fill="none">
             <rect className="robot-arm-l" x="1" y="28" width="8" height="6" rx="3" fill="#d1d1d6"/>
             <rect className="robot-arm-r" x="33" y="28" width="8" height="6" rx="3" fill="#d1d1d6"/>
