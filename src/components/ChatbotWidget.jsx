@@ -12,7 +12,7 @@ function ChatbotWidget() {
   useEffect(() => {
     const verificar = () => {
       const rol = localStorage.getItem('rol');
-      setEsAdmin(rol === 'ADMIN');
+      setEsAdmin(rol === 'ADMIN' || rol === 'SUPER_ADMIN');
     };
     verificar();
     // Por si acaso el componente monta antes de que setAuthData termine
@@ -119,6 +119,34 @@ function ChatbotWidget() {
     return () => clearInterval(intentar);
   }, [esAdmin, negocioActivo]);
 
+  // ── Detectar cuando Botpress se cierra para restaurar UI en móvil ────────
+  useEffect(() => {
+    if (!esAdmin || window.innerWidth >= 768) return;
+
+    const checkBotpressClosed = setInterval(() => {
+      // Detectar si el iframe del chat está visible
+      const chatIframe = document.querySelector('iframe[src*="botpress"]');
+      const isChatVisible = chatIframe && window.getComputedStyle(chatIframe).display !== 'none';
+      
+      if (!isChatVisible && chatOpen) {
+        // El chat se cerró, restaurar botones
+        setChatOpen(false);
+        const sidebar = document.getElementById('main-sidebar');
+        const topButtons = document.getElementById('mobile-top-buttons');
+        if (sidebar) {
+          sidebar.style.opacity = '1';
+          sidebar.style.pointerEvents = 'auto';
+        }
+        if (topButtons) {
+          topButtons.style.opacity = '1';
+          topButtons.style.pointerEvents = 'auto';
+        }
+      }
+    }, 500);
+
+    return () => clearInterval(checkBotpressClosed);
+  }, [esAdmin, chatOpen]);
+
   // ── Abrir/cerrar chat ────────────────────────────────────────────────────
   const toggleChat = () => {
     if (window.botpress?.open && window.botpress?.close) {
@@ -126,7 +154,22 @@ function ChatbotWidget() {
     } else if (window.botpress?.toggle) {
       window.botpress.toggle();
     }
-    setChatOpen(prev => !prev);
+    const newState = !chatOpen;
+    setChatOpen(newState);
+
+    // Ocultar botones flotantes del sidebar cuando el chat esté abierto en móvil
+    if (window.innerWidth < 768) {
+      const sidebar = document.getElementById('main-sidebar');
+      const topButtons = document.getElementById('mobile-top-buttons');
+      if (sidebar) {
+        sidebar.style.opacity = newState ? '0' : '1';
+        sidebar.style.pointerEvents = newState ? 'none' : 'auto';
+      }
+      if (topButtons) {
+        topButtons.style.opacity = newState ? '0' : '1';
+        topButtons.style.pointerEvents = newState ? 'none' : 'auto';
+      }
+    }
   };
 
   if (!esAdmin) return null;

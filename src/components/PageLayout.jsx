@@ -41,7 +41,7 @@ export function PageLayout({ title, subtitle, badge, actions, children }) {
                   <p className="mt-1.5 max-w-xl text-[15px] text-muted-foreground">{subtitle}</p>
                 )}
               </div>
-              {actions && <div className="relative flex shrink-0 flex-wrap gap-3">{actions}</div>}
+              {actions && <div className="relative flex shrink-0 flex-wrap gap-2">{actions}</div>}
             </div>
           </AuroraCard>
         </motion.div>

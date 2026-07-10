@@ -38,7 +38,7 @@ const MovimientoRow = ({ mov, index }) => {
       initial={{ opacity: 0, x: -12 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: 0.3 + index * 0.05 }}
-      className="flex items-center gap-4 rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 transition-all hover:border-white/10 hover:bg-white/[0.04]"
+      className="flex flex-col gap-3 rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 transition-all hover:border-white/10 hover:bg-white/[0.04] sm:flex-row sm:items-center sm:gap-4"
     >
       <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border', cfg.bg)}>
         <Icon size={18} className={cfg.color} />
@@ -51,12 +51,14 @@ const MovimientoRow = ({ mov, index }) => {
           {mov.motivo ? ` · ${mov.motivo}` : ''}
         </p>
       </div>
-      <Badge variant="outline" className={cn('shrink-0 font-bold', cfg.bg, cfg.color)}>
-        {tipo === 'AJUSTE' ? '=' : tipo === 'SALIDA' ? '-' : '+'}{Math.abs(mov.cantidad)} uds
-      </Badge>
-      <Badge variant="outline" className="hidden shrink-0 border-white/10 sm:inline-flex">
-        {cfg.label}
-      </Badge>
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge variant="outline" className={cn('shrink-0 font-bold', cfg.bg, cfg.color)}>
+          {tipo === 'AJUSTE' ? '=' : tipo === 'SALIDA' ? '-' : '+'}{Math.abs(mov.cantidad)} uds
+        </Badge>
+        <Badge variant="outline" className="shrink-0 border-white/10">
+          {cfg.label}
+        </Badge>
+      </div>
     </motion.div>
   )
 }
@@ -267,12 +269,12 @@ const StockDashboard = () => {
       </PageLayout>
 
       <Sheet open={showForm} onOpenChange={setShowForm}>
-        <SheetContent side="right" className="flex w-[440px] max-w-full flex-col gap-0 border-l p-0">
-          <SheetHeader className="shrink-0 border-b bg-muted/20 px-8 py-6">
-            <SheetTitle className="text-xl font-bold">Registrar Movimiento</SheetTitle>
+        <SheetContent side="right" className="flex w-full max-w-full flex-col gap-0 border-l p-0 sm:w-[440px]">
+          <SheetHeader className="shrink-0 border-b bg-muted/20 px-6 py-5 sm:px-8 sm:py-6">
+            <SheetTitle className="text-lg font-bold sm:text-xl">Registrar Movimiento</SheetTitle>
             <SheetDescription>Entrada, salida o ajuste de stock.</SheetDescription>
           </SheetHeader>
-          <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-5 overflow-y-auto px-8 py-6">
+          <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-5 overflow-y-auto px-6 py-5 sm:px-8 sm:py-6">
             {/* Selector de producto */}
             <div className="space-y-2">
               <Label htmlFor="s-producto">Producto</Label>
@@ -346,9 +348,9 @@ const StockDashboard = () => {
               <Input id="s-motivo" value={form.motivo} onChange={e => setForm({ ...form, motivo: e.target.value })} className="h-11 rounded-xl" placeholder="Ej. Venta mostrador, Ajuste de inventario..." />
             </div>
           </form>
-          <div className="flex shrink-0 justify-end gap-3 border-t bg-muted/20 px-8 py-5">
-            <Button variant="outline" onClick={() => setShowForm(false)} className="rounded-xl">Cancelar</Button>
-            <Button onClick={handleSubmit} disabled={saving} className="gap-2 rounded-xl">
+          <div className="flex shrink-0 flex-wrap justify-end gap-3 border-t bg-muted/20 px-6 py-4 sm:px-8 sm:py-5">
+            <Button variant="outline" onClick={() => setShowForm(false)} className="flex-1 rounded-xl sm:flex-none">Cancelar</Button>
+            <Button onClick={handleSubmit} disabled={saving} className="flex-1 gap-2 rounded-xl sm:flex-none">
               {saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
               {saving ? 'Guardando...' : 'Registrar'}
             </Button>

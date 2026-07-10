@@ -51,9 +51,9 @@ const StockBar = ({ name, current, max, index }) => {
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.45, delay: 0.4 + index * 0.08 }}
     >
-      <div className="flex items-center justify-between text-sm">
-        <span className="max-w-[180px] truncate font-semibold text-foreground">{name}</span>
-        <span className={cn('text-xs font-bold', color.text)}>{Math.round(pct)}%</span>
+      <div className="flex items-center justify-between gap-2 text-sm">
+        <span className="min-w-0 flex-1 truncate font-semibold text-foreground">{name}</span>
+        <span className={cn('shrink-0 text-xs font-bold', color.text)}>{Math.round(pct)}%</span>
       </div>
       <div className="relative h-2 overflow-hidden rounded-full bg-muted/30">
         <div
@@ -253,7 +253,7 @@ const Dashboard = () => {
               <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                 <div className="max-w-2xl">
                   <div className="mb-4 flex flex-wrap items-center gap-2">
-                    <span className="gsap-hero-badge ml-auto flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100/80 px-3 py-1 text-xs font-mono font-semibold text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-white/50">
+                    <span className="gsap-hero-badge flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100/80 px-3 py-1 text-xs font-mono font-semibold text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-white/50">
                       <Activity size={11} />
                       <LiveClock />
                     </span>
@@ -314,7 +314,6 @@ const Dashboard = () => {
               sub={lowStockCount > 0 ? 'productos ≤ mínimo' : 'Todo en orden'}
               glow={lowStockCount > 0 ? 'rose' : 'emerald'}
               delay={0}
-              trend={lowStockCount > 0 ? `${lowStockCount} alertas` : '✓ Saludable'}
             />
           </div>
         </div>
@@ -465,9 +464,9 @@ const Dashboard = () => {
         </div>
 
         {/* ── Resumen ejecutivo ── */}
-        <div className="gsap-section mb-8 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-          <AuroraCard glow="violet" className="col-span-2 lg:col-span-4">
-            <div className="p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+        <div className="gsap-section mb-8">
+          <AuroraCard glow="violet">
+            <div className="p-5 flex flex-col gap-4 sm:flex-row sm:items-center">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-violet-500/15">
                 <BarChart3 size={22} className="text-violet-400" />
               </div>

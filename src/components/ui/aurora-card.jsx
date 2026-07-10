@@ -96,25 +96,27 @@ export function AuroraStatCard({
           </div>
 
           {/* Big number */}
-          <div className="my-4">
-            <p className="aurora-kpi-value font-heading font-bold tracking-tight tabular-nums leading-none">
+          <div className="my-4 min-w-0">
+            <p className="aurora-kpi-value font-heading font-bold tracking-tight tabular-nums leading-none break-all">
               <AnimatedNumber value={numericValue} prefix={prefix} decimals={decimals} />
             </p>
             {sub && (
-              <p className="aurora-kpi-sub mt-2">{sub}</p>
+              <p className="aurora-kpi-sub mt-2 line-clamp-2">{sub}</p>
             )}
           </div>
 
-          {/* Bottom pill — estilo Apple "Start Free" */}
-          <div className="flex items-center justify-between gap-2">
-            <div className={cn(
-              'flex-1 rounded-2xl px-4 py-2.5 text-center text-sm font-bold',
-              'bg-black/15 text-black/70 dark:bg-white/12 dark:text-white/80',
-              'backdrop-blur-md border border-black/8 dark:border-white/10'
-            )}>
-              {trend ?? 'Ver detalle'}
+          {/* Bottom pill */}
+          {trend && (
+            <div className="flex items-center justify-between gap-2">
+              <div className={cn(
+                'flex-1 rounded-2xl px-4 py-2.5 text-center text-sm font-bold',
+                'bg-black/15 text-black/70 dark:bg-white/12 dark:text-white/80',
+                'backdrop-blur-md border border-black/8 dark:border-white/10'
+              )}>
+                {trend}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </AuroraCard>
     </div>

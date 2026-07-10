@@ -5,14 +5,16 @@ import { getRol } from '../services/config';
  * El rol viene del localStorage, guardado tras el login.
  *
  * Uso:
- *   const { isAdmin, isEmpleado, rol } = useRol()
+ *   const { isAdmin, isEmpleado, isSuperAdmin, rol } = useRol()
  *   {isAdmin && <Button>Eliminar</Button>}
+ *   {isSuperAdmin && <Button>Panel Super Admin</Button>}
  */
 export function useRol() {
   const rol = getRol() || 'EMPLEADO'; // fallback seguro
   return {
     rol,
-    isAdmin:    rol === 'ADMIN',
-    isEmpleado: rol === 'EMPLEADO',
+    isSuperAdmin: rol === 'SUPER_ADMIN',
+    isAdmin:      rol === 'ADMIN' || rol === 'SUPER_ADMIN', // SUPER_ADMIN tiene todos los permisos de ADMIN
+    isEmpleado:   rol === 'EMPLEADO',
   };
 }

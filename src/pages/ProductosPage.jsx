@@ -27,11 +27,13 @@ import { subirImagenProducto } from '../services/uploadService';
 import { useApp } from '../context/AppContext';
 import { useStockStats } from '../hooks/useStockStats';
 import { useErrorHandler } from '../hooks/useErrorHandler';
+import { useRol } from '../hooks/useRol';
 
 const FORM_DEFAULT = { nombre: '', descripcion: '', precio: '', stock: '', imagenUrl: '', sku: '', stockMinimo: '5', categoriaId: '' };
 
 export default function ProductosPage() {
   const { productos, categorias, loading, recargar } = useApp();
+  const { isAdmin } = useRol();
   const stats = useStockStats(productos); // Hook compartido para estadísticas
   const { handleError } = useErrorHandler(); // Hook compartido para manejo de errores
   const [saving, setSaving]               = useState(false);
@@ -152,9 +154,11 @@ export default function ProductosPage() {
       subtitle="Administra y controla tu inventario en tiempo real"
 
       actions={
-        <Button onClick={() => { cancelForm(); setShowForm(true); }} className="gap-2 rounded-xl shadow-md">
-          <Plus size={16} /> Nuevo Producto
-        </Button>
+        isAdmin && (
+          <Button onClick={() => { cancelForm(); setShowForm(true); }} className="gap-2 rounded-xl shadow-md">
+            <Plus size={16} /> Nuevo Producto
+          </Button>
+        )
       }
     >
       <div ref={mainRef}>
@@ -344,7 +348,7 @@ export default function ProductosPage() {
                 <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mb-4"><Package size={32} className="text-muted-foreground/50" /></div>
                 <h3 className="text-lg font-bold text-foreground mb-1">{searchQuery ? 'Sin resultados' : 'Catálogo vacío'}</h3>
                 <p className="text-muted-foreground">{searchQuery ? `No se encontraron productos para "${searchQuery}"` : 'Empieza agregando tu primer producto al inventario.'}</p>
-                {!searchQuery && <Button onClick={() => { cancelForm(); setShowForm(true); }} className="mt-6 rounded-xl gap-2"><Plus size={16} /> Agregar Producto</Button>}
+                {!searchQuery && isAdmin && <Button onClick={() => { cancelForm(); setShowForm(true); }} className="mt-6 rounded-xl gap-2"><Plus size={16} /> Agregar Producto</Button>}
               </div>
             ) : viewMode === 'grid' ? (
               <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
@@ -476,6 +480,7 @@ export default function ProductosPage() {
                           </span>
 
                           <div className="flex items-center gap-1.5 ml-auto">
+                            {isAdmin && (<>
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
@@ -500,6 +505,7 @@ export default function ProductosPage() {
                               </TooltipTrigger>
                               <TooltipContent>Eliminar producto</TooltipContent>
                             </Tooltip>
+                            </>)}
                           </div>
                         </CardFooter>
                       </Card>
@@ -508,7 +514,7 @@ export default function ProductosPage() {
                 })}
               </motion.div>
             ) : (
-              <div className="rounded-xl border border-muted/50 overflow-hidden">
+              <div className="rounded-xl border border-muted/50 overflow-x-auto">
                 <Table>
                   <TableHeader className="bg-muted/30">
                     <TableRow>
@@ -517,7 +523,7 @@ export default function ProductosPage() {
                       <TableHead className="font-semibold text-foreground text-right">Precio</TableHead>
                       <TableHead className="font-semibold text-foreground text-center">Stock</TableHead>
                       <TableHead className="font-semibold text-foreground text-right">Valor Total</TableHead>
-                      <TableHead className="font-semibold text-foreground text-right">Acciones</TableHead>
+                      {isAdmin && <TableHead className="font-semibold text-foreground text-right">Acciones</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -537,6 +543,7 @@ export default function ProductosPage() {
                         <TableCell className="text-right font-medium">${((prod.precio || 0) * (prod.stock || 0)).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
+                            {isAdmin && (<>
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => handleEdit(prod)}><Pencil size={14} className="text-muted-foreground" /></Button>
@@ -549,6 +556,7 @@ export default function ProductosPage() {
                               </TooltipTrigger>
                               <TooltipContent>Eliminar</TooltipContent>
                             </Tooltip>
+                            </>)}
                           </div>
                         </TableCell>
                       </TableRow>

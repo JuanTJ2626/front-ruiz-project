@@ -105,14 +105,14 @@ const ReportesDashboard = () => {
       subtitle="Métricas clave del inventario con exportación a PDF y CSV desde el backend."
 
       actions={
-        <>
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => handleExport('csv')} className="gap-2 rounded-xl border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20">
-            <FileSpreadsheet size={16} /> Exportar CSV
+            <FileSpreadsheet size={16} /> <span className="hidden sm:inline">Exportar</span> CSV
           </Button>
           <Button onClick={() => handleExport('pdf')} className="gap-2 rounded-xl shadow-md">
-            <FileDown size={16} /> Exportar PDF
+            <FileDown size={16} /> <span className="hidden sm:inline">Exportar</span> PDF
           </Button>
-        </>
+        </div>
       }
     >
       <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">

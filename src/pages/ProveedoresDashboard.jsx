@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, useCallback } from 'react'
 import { motion } from 'motion/react'
 import { Truck, Plus, Mail, Phone, Search, Package, Clock, ShoppingCart,
   CheckCircle2, X, Check, Loader2, User, Send, Pencil, History, ChevronDown, ChevronUp,
-  CalendarDays, XCircle, AlertTriangle, Info, Lock, MailCheck, MailX, Trash2 } from 'lucide-react'
+  CalendarDays, XCircle, AlertTriangle, Info, Lock, MailCheck, MailX, Trash2, PackagePlus, Link } from 'lucide-react'
 import { PageLayout } from '../components/PageLayout'
 import { AuroraCard, AuroraStatCard } from '../components/ui/aurora-card'
 import { Badge } from '../components/ui/badge'
@@ -13,12 +13,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Separator } from '../components/ui/separator'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '../components/ui/sheet'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../components/ui/dialog'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Switch } from '../components/ui/switch'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip'
 import { toast } from 'sonner'
 import { cn } from '#/lib/utils'
 import { getProveedores, crearProveedor, actualizarProveedor, eliminarProveedor } from '../services/proveedorService'
 import { getPedidos, crearPedido, cambiarEstadoPedido, actualizarPedido, eliminarPedido, reenviarEmail } from '../services/pedidoService'
+import { crearProducto } from '../services/productoService'
 import { getUsuarioId, getNegocioId } from '../services/config'
 import { useRol } from '../hooks/useRol'
 import { useApp } from '../context/AppContext'
@@ -104,11 +106,17 @@ const PedidoRow = ({ pedido, index, onCambiarEstado, onReenviarEmail, onEditar, 
     <motion.div
       initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }}
       transition={{ delay: 0.2 + index * 0.05 }}
-      className="flex items-center gap-4 rounded-xl border border-white/5 bg-white/[0.02] p-4 transition-all hover:border-white/10 hover:bg-white/[0.04]"
+      className="flex flex-col gap-3 rounded-xl border border-white/5 bg-white/[0.02] p-4 transition-all hover:border-white/10 hover:bg-white/[0.04] sm:flex-row sm:items-center"
     >
+      {/* Info del pedido */}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-bold text-foreground">{pedido.descripcion}</p>
-        <p className="text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="truncate text-sm font-bold text-foreground">{pedido.descripcion}</p>
+          <Badge variant="outline" className={cn('shrink-0 text-[10px] font-bold', estadoPedidoStyle[pedido.estado] ?? '')}>
+            {pedido.estado}
+          </Badge>
+        </div>
+        <p className="text-xs text-muted-foreground mt-0.5">
           {pedido.proveedorNombre} · {pedido.cantidad} {pedido.cantidad === 1 ? 'unidad' : 'unidades'}
           {pedido.precioUnitario ? ` · $${Number(pedido.precioUnitario).toFixed(2)} c/u` : ''}
         </p>
@@ -118,16 +126,15 @@ const PedidoRow = ({ pedido, index, onCambiarEstado, onReenviarEmail, onEditar, 
           </p>
         )}
       </div>
-      <Badge variant="outline" className={cn('shrink-0 text-[10px] font-bold', estadoPedidoStyle[pedido.estado] ?? '')}>
-        {pedido.estado}
-      </Badge>
+
+      {/* Acciones */}
       {(pedido.estado === 'PENDIENTE' || pedido.estado === 'ENVIADO') && isAdmin && (
-        <>
+        <div className="flex flex-wrap items-center gap-2">
           {puedeEditar && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button size="sm" variant="outline"
-                  className="shrink-0 h-8 rounded-lg border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20"
+                  className="h-8 rounded-lg border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20"
                   onClick={() => onEditar(pedido)}>
                   <Pencil size={12} />
                 </Button>
@@ -138,7 +145,7 @@ const PedidoRow = ({ pedido, index, onCambiarEstado, onReenviarEmail, onEditar, 
           <Tooltip>
             <TooltipTrigger asChild>
               <Button size="sm" variant="outline"
-                className="shrink-0 h-8 rounded-lg border-cyan-500/30 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20"
+                className="h-8 rounded-lg border-cyan-500/30 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20"
                 onClick={handleReenviar} disabled={enviando}>
                 {enviando ? <Loader2 size={12} className="animate-spin" /> : <Mail size={12} />}
               </Button>
@@ -148,18 +155,18 @@ const PedidoRow = ({ pedido, index, onCambiarEstado, onReenviarEmail, onEditar, 
           <Tooltip>
             <TooltipTrigger asChild>
               <Button size="sm" variant="outline"
-                className="shrink-0 h-8 rounded-lg border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                className="h-8 rounded-lg border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20"
                 onClick={() => onEliminar(pedido)}>
                 <Trash2 size={12} />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Cancelar y eliminar pedido</TooltipContent>
           </Tooltip>
-          <Button size="sm" className="shrink-0 h-8 rounded-lg text-xs gap-1 bg-emerald-600 hover:bg-emerald-700"
+          <Button size="sm" className="h-8 rounded-lg text-xs gap-1 bg-emerald-600 hover:bg-emerald-700"
             onClick={() => onCambiarEstado(pedido.id, 'RECIBIDO')}>
             <Check size={12} /> Recibido
           </Button>
-        </>
+        </div>
       )}
     </motion.div>
   )
@@ -336,6 +343,13 @@ const ProveedoresDashboard = () => {
   const [confirmEliminar, setConfirmEliminar] = useState(null) // { tipo: 'proveedor'|'pedido', item }
   const [eliminando, setEliminando] = useState(false)
 
+  // ── Modal "Recibido sin producto" ──────────────────────────
+  const [modalRecibido, setModalRecibido]     = useState(null)  // pedido pendiente de confirmar
+  const [tabRecibido, setTabRecibido]         = useState('asignar')
+  const [productoAsignadoId, setProductoAsignadoId] = useState('')
+  const [nuevoProducto, setNuevoProducto]     = useState({ nombre: '', precio: '', stock: '', stockMinimo: '5' })
+  const [guardandoRecibido, setGuardandoRecibido] = useState(false)
+
   const { isAdmin } = useRol()
   const { productos = [] } = useApp()
 
@@ -435,6 +449,19 @@ const ProveedoresDashboard = () => {
   }
 
   const handleCambiarEstado = async (id, estado) => {
+    // Si se marca como RECIBIDO, verificar si tiene producto asociado
+    if (estado === 'RECIBIDO') {
+      const pedido = pedidos.find(p => p.id === id)
+      if (pedido && !pedido.productoId) {
+        // Abrir modal para asignar/crear producto antes de confirmar
+        setModalRecibido(pedido)
+        setTabRecibido('asignar')
+        setProductoAsignadoId('')
+        setNuevoProducto({ nombre: pedido.descripcion || '', precio: '', stock: String(pedido.cantidad || ''), stockMinimo: '5' })
+        return
+      }
+    }
+    // Flujo normal (tiene producto o no es RECIBIDO)
     try {
       await cambiarEstadoPedido(id, estado)
       toast.success(`Pedido marcado como ${estado.toLowerCase()}`)
@@ -444,6 +471,67 @@ const ProveedoresDashboard = () => {
       if (status === 403) toast.error('No tienes permiso para cambiar el estado del pedido')
       else if (status === 404) toast.error('El pedido ya no existe')
       else toast.error('No se pudo actualizar el estado del pedido')
+    }
+  }
+
+  // Confirmar recibido: asignar producto existente o crear uno nuevo
+  const handleConfirmarRecibido = async () => {
+    if (!modalRecibido) return
+    setGuardandoRecibido(true)
+    try {
+      let productoId = null
+
+      if (tabRecibido === 'asignar') {
+        // Asignar producto existente
+        if (!productoAsignadoId) {
+          toast.error('Selecciona un producto para asignar')
+          setGuardandoRecibido(false)
+          return
+        }
+        productoId = parseInt(productoAsignadoId)
+      } else {
+        // Crear producto nuevo
+        if (!nuevoProducto.nombre?.trim()) {
+          toast.error('El nombre del producto es obligatorio')
+          setGuardandoRecibido(false)
+          return
+        }
+        if (!nuevoProducto.precio || parseFloat(nuevoProducto.precio) <= 0) {
+          toast.error('Ingresa un precio válido')
+          setGuardandoRecibido(false)
+          return
+        }
+        const creado = await crearProducto({
+          nombre:      nuevoProducto.nombre.trim(),
+          precio:      parseFloat(nuevoProducto.precio),
+          stock:       parseInt(nuevoProducto.stock) || 0,
+          stockMinimo: parseInt(nuevoProducto.stockMinimo) || 5,
+        })
+        productoId = creado.id
+        toast.success(`Producto "${nuevoProducto.nombre.trim()}" creado`)
+      }
+
+      // Actualizar el pedido con el productoId antes de marcar recibido
+      await actualizarPedido(modalRecibido.id, {
+        descripcion:   modalRecibido.descripcion,
+        cantidad:      modalRecibido.cantidad,
+        proveedorId:   modalRecibido.proveedorId,
+        precioUnitario: modalRecibido.precioUnitario,
+        productoId,
+      })
+
+      // Ahora sí marcar como RECIBIDO (el backend sube el stock)
+      await cambiarEstadoPedido(modalRecibido.id, 'RECIBIDO')
+      toast.success('Pedido recibido y stock actualizado correctamente')
+      setModalRecibido(null)
+      cargar()
+    } catch (err) {
+      const status = err?.response?.status
+      if (status === 403) toast.error('No tienes permiso para realizar esta acción')
+      else if (status === 409) toast.error('Ya existe un producto con ese nombre')
+      else toast.error('No se pudo completar la recepción. Intenta de nuevo')
+    } finally {
+      setGuardandoRecibido(false)
     }
   }
 
@@ -922,6 +1010,123 @@ const ProveedoresDashboard = () => {
             >
               {eliminando ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
               {eliminando ? 'Eliminando...' : 'Sí, eliminar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Modal: pedido recibido sin producto asociado ──────── */}
+      <Dialog open={!!modalRecibido} onOpenChange={(open) => !open && setModalRecibido(null)}>
+        <DialogContent className="max-w-lg rounded-2xl p-0 overflow-hidden">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b bg-amber-500/5">
+            <DialogTitle className="flex items-center gap-2 text-amber-400">
+              <PackagePlus size={20} />
+              Pedido sin producto asignado
+            </DialogTitle>
+            <DialogDescription className="pt-1 text-sm">
+              El pedido <span className="font-semibold text-foreground">"{modalRecibido?.descripcion}"</span> no tiene
+              un producto del catálogo vinculado. Asigna uno existente o crea uno nuevo para que el stock se actualice correctamente.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="px-6 py-5">
+            <Tabs value={tabRecibido} onValueChange={setTabRecibido}>
+              <TabsList className="w-full rounded-xl mb-5">
+                <TabsTrigger value="asignar" className="flex-1 gap-2 rounded-lg">
+                  <Link size={14} /> Asignar existente
+                </TabsTrigger>
+                <TabsTrigger value="crear" className="flex-1 gap-2 rounded-lg">
+                  <PackagePlus size={14} /> Crear nuevo
+                </TabsTrigger>
+              </TabsList>
+
+              {/* Tab: asignar producto existente */}
+              <TabsContent value="asignar" className="mt-0 space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold">Producto del catálogo</Label>
+                  <Select value={productoAsignadoId} onValueChange={setProductoAsignadoId}>
+                    <SelectTrigger className="h-11 rounded-xl">
+                      <SelectValue placeholder="Selecciona un producto..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {productos.map(p => (
+                        <SelectItem key={p.id} value={String(p.id)}>
+                          <span className="flex items-center gap-2">
+                            {p.nombre}
+                            <span className="text-xs text-muted-foreground">— Stock actual: {p.stock}</span>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Al confirmar, se sumarán <span className="font-semibold text-foreground">{modalRecibido?.cantidad} unidades</span> al stock del producto seleccionado.
+                  </p>
+                </div>
+              </TabsContent>
+
+              {/* Tab: crear producto nuevo */}
+              <TabsContent value="crear" className="mt-0 space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold">Nombre del producto *</Label>
+                  <Input
+                    value={nuevoProducto.nombre}
+                    onChange={e => setNuevoProducto(p => ({...p, nombre: e.target.value}))}
+                    className="h-11 rounded-xl"
+                    placeholder="Ej. Aceite motor 5W-30"
+                    autoFocus
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold">Precio ($) *</Label>
+                    <Input
+                      type="number" min="0.01" step="0.01"
+                      value={nuevoProducto.precio}
+                      onChange={e => setNuevoProducto(p => ({...p, precio: e.target.value}))}
+                      className="h-11 rounded-xl"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold">Stock inicial</Label>
+                    <Input
+                      type="number" min="0"
+                      value={nuevoProducto.stock}
+                      onChange={e => setNuevoProducto(p => ({...p, stock: e.target.value}))}
+                      className="h-11 rounded-xl"
+                      placeholder={String(modalRecibido?.cantidad || 0)}
+                    />
+                    <p className="text-[11px] text-muted-foreground">Por defecto: cantidad del pedido ({modalRecibido?.cantidad})</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold">Stock mínimo</Label>
+                  <Input
+                    type="number" min="0"
+                    value={nuevoProducto.stockMinimo}
+                    onChange={e => setNuevoProducto(p => ({...p, stockMinimo: e.target.value}))}
+                    className="h-11 rounded-xl"
+                    placeholder="5"
+                  />
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+
+          <DialogFooter className="px-6 pb-6 gap-3">
+            <Button variant="outline" onClick={() => setModalRecibido(null)} className="rounded-xl" disabled={guardandoRecibido}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleConfirmarRecibido}
+              disabled={guardandoRecibido}
+              className="gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              {guardandoRecibido
+                ? <Loader2 size={15} className="animate-spin" />
+                : <CheckCircle2 size={15} />}
+              {guardandoRecibido ? 'Procesando...' : 'Confirmar recibido'}
             </Button>
           </DialogFooter>
         </DialogContent>

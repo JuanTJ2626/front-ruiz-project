@@ -104,7 +104,17 @@ const ConfiguracionDashboard = () => {
   }
 
   const handleCambiarRolLocal = async (usuario) => {
-    const nuevoRol = usuario.rol === 'ADMIN' ? 'EMPLEADO' : 'ADMIN'
+    // PROTECCIÓN: NO permitir cambiar el rol de SUPER_ADMIN
+    if (usuario.rol === 'SUPER_ADMIN') {
+      toast.error('🔒 No se puede cambiar el rol del SUPER_ADMIN')
+      return
+    }
+    
+    // Ciclo: EMPLEADO → ADMIN → EMPLEADO (no se puede llegar a SUPER_ADMIN desde aquí)
+    let nuevoRol = 'EMPLEADO'
+    if (usuario.rol === 'EMPLEADO') nuevoRol = 'ADMIN'
+    else if (usuario.rol === 'ADMIN') nuevoRol = 'EMPLEADO'
+    
     await handleCambiarRol(usuario, nuevoRol)
   }
 
@@ -169,10 +179,10 @@ const ConfiguracionDashboard = () => {
 
       {/* ── TABS PRINCIPALES ── */}
       <Tabs defaultValue="negocio" className="w-full">
-        <TabsList className="mb-6 h-10 rounded-xl bg-muted/40 p-1">
-          <TabsTrigger value="negocio"  className="rounded-lg px-5 text-sm font-semibold">Negocio</TabsTrigger>
-          <TabsTrigger value="perfil"   className="rounded-lg px-5 text-sm font-semibold">Perfil</TabsTrigger>
-          {isAdmin && <TabsTrigger value="usuarios" className="rounded-lg px-5 text-sm font-semibold">Usuarios</TabsTrigger>}
+        <TabsList className="mb-6 h-auto rounded-xl bg-muted/40 p-1 flex flex-wrap gap-1">
+          <TabsTrigger value="negocio"  className="rounded-lg px-4 py-2 text-sm font-semibold">Negocio</TabsTrigger>
+          <TabsTrigger value="perfil"   className="rounded-lg px-4 py-2 text-sm font-semibold">Perfil</TabsTrigger>
+          {isAdmin && <TabsTrigger value="usuarios" className="rounded-lg px-4 py-2 text-sm font-semibold">Usuarios</TabsTrigger>}
         </TabsList>
 
         {/* ── TAB NEGOCIO ── */}
@@ -355,15 +365,20 @@ const ConfiguracionDashboard = () => {
                   ) : (
                     <div className="flex flex-col gap-2">
                       {usuarios.map((u) => (
-                        <div key={u.id} className="flex items-center gap-4 rounded-xl border border-white/5 bg-white/[0.02] p-4 transition-all hover:border-white/10">
-                          <Avatar className="h-10 w-10 border border-white/10">
+                        <div key={u.id} className="flex flex-col gap-3 rounded-xl border border-white/5 bg-white/[0.02] p-4 transition-all hover:border-white/10 sm:flex-row sm:items-center">
+                          <Avatar className="hidden h-10 w-10 shrink-0 border border-white/10 sm:flex">
                             <AvatarFallback className="bg-muted text-sm font-bold">{(u.username || u.nombre || '?').slice(0,2).toUpperCase()}</AvatarFallback>
                           </Avatar>
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
+                              <Avatar className="h-7 w-7 shrink-0 border border-white/10 sm:hidden">
+                                <AvatarFallback className="bg-muted text-xs font-bold">{(u.username || u.nombre || '?').slice(0,2).toUpperCase()}</AvatarFallback>
+                              </Avatar>
                               <span className="text-sm font-bold text-foreground">{u.username || u.nombre}</span>
                               <Badge variant="outline" className={cn('text-[10px] font-bold',
-                                u.rol === 'ADMIN' ? 'border-violet-500/30 bg-violet-500/10 text-violet-400' : 'border-cyan-500/30 bg-cyan-500/10 text-cyan-400'
+                                u.rol === 'SUPER_ADMIN' ? 'border-fuchsia-500/30 bg-fuchsia-500/10 text-fuchsia-400' :
+                                u.rol === 'ADMIN' ? 'border-violet-500/30 bg-violet-500/10 text-violet-400' : 
+                                'border-cyan-500/30 bg-cyan-500/10 text-cyan-400'
                               )}>{u.rol}</Badge>
                             </div>
                             {/* Negocio asignado — solo relevante para EMPLEADOS */}
@@ -381,19 +396,27 @@ const ConfiguracionDashboard = () => {
                             )}
                             {u.email && <p className="text-[11px] text-muted-foreground/60">{u.email}</p>}
                           </div>
-                          <div className="flex shrink-0 items-center gap-3">
-                            {/* Switch activar/desactivar */}
+                          <div className="flex flex-wrap items-center gap-2">
+                            {/* Switch activar/desactivar — BLOQUEADO para SUPER_ADMIN */}
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <div className="flex items-center gap-1.5">
                                   <Switch
                                     checked={u.activo !== false}
-                                    onCheckedChange={() => handleToggleActivo(u)}
-                                    className="data-[state=checked]:bg-emerald-500"
+                                    onCheckedChange={() => u.rol !== 'SUPER_ADMIN' && handleToggleActivo(u)}
+                                    disabled={u.rol === 'SUPER_ADMIN'}
+                                    className={cn(
+                                      "data-[state=checked]:bg-emerald-500",
+                                      u.rol === 'SUPER_ADMIN' && "opacity-50 cursor-not-allowed"
+                                    )}
                                   />
                                 </div>
                               </TooltipTrigger>
-                              <TooltipContent>{u.activo !== false ? 'Desactivar usuario' : 'Activar usuario'}</TooltipContent>
+                              <TooltipContent>
+                                {u.rol === 'SUPER_ADMIN' 
+                                  ? '🔒 El SUPER_ADMIN no puede desactivarse' 
+                                  : (u.activo !== false ? 'Desactivar usuario' : 'Activar usuario')}
+                              </TooltipContent>
                             </Tooltip>
                             <Separator orientation="vertical" className="h-5 opacity-30" />
                             {/* Asignar / quitar negocio — solo para EMPLEADOS */}
@@ -423,26 +446,41 @@ const ConfiguracionDashboard = () => {
                                 <Separator orientation="vertical" className="h-5 opacity-30" />
                               </>
                             )}
-                            {/* Cambiar rol */}
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg"
-                                  onClick={() => handleCambiarRolLocal(u)}>
-                                  <KeyRound size={14} />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Cambiar a {u.rol === 'ADMIN' ? 'EMPLEADO' : 'ADMIN'}</TooltipContent>
-                            </Tooltip>
-                            {/* Eliminar */}
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg hover:bg-red-500/10 hover:text-red-500"
-                                  onClick={() => setDeleteTarget(u)}>
-                                  <Trash2 size={14} />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Eliminar usuario</TooltipContent>
-                            </Tooltip>
+                            {/* Cambiar rol — OCULTO para SUPER_ADMIN */}
+                            {u.rol !== 'SUPER_ADMIN' && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg"
+                                    onClick={() => handleCambiarRolLocal(u)}>
+                                    <KeyRound size={14} />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Cambiar rol (EMPLEADO ⇄ ADMIN)</TooltipContent>
+                              </Tooltip>
+                            )}
+                            {/* Eliminar — OCULTO para SUPER_ADMIN */}
+                            {u.rol !== 'SUPER_ADMIN' && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg hover:bg-red-500/10 hover:text-red-500"
+                                    onClick={() => setDeleteTarget(u)}>
+                                    <Trash2 size={14} />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Eliminar usuario</TooltipContent>
+                              </Tooltip>
+                            )}
+                            {/* Indicador visual para SUPER_ADMIN protegido */}
+                            {u.rol === 'SUPER_ADMIN' && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-fuchsia-500/10 border border-fuchsia-500/20">
+                                    <Shield size={14} className="text-fuchsia-400" />
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent>🔒 Cuenta protegida - No se puede modificar ni eliminar</TooltipContent>
+                              </Tooltip>
+                            )}
                           </div>
                         </div>
                       ))}
