@@ -15,7 +15,7 @@ export function useErrorHandler() {
    */
   const handleError = useCallback((err, options = {}) => {
     const {
-      operation = 'realizar la operación', // ej: 'guardar el producto', 'eliminar el usuario'
+      operation = 'realizar la operación',
       conflictMsg = 'Ya existe un registro con esos datos',
       validationMsg = 'Verifica los datos ingresados e intenta de nuevo',
       forbiddenMsg = 'No tienes permiso para realizar esta acción',
@@ -23,12 +23,17 @@ export function useErrorHandler() {
       insufficientMsg = 'Stock insuficiente para completar la operación',
     } = options;
 
-    const status = err?.response?.status;
+    // fetchApi pone el status en err.status (no en err.response.status como Axios)
+    const status = err?.status ?? err?.response?.status;
 
-    // Mapeo de códigos HTTP a mensajes amigables
+    // Log para debugging (solo en desarrollo)
+    if (import.meta.env.DEV) {
+      console.error(`[Error ${status || 'NETWORK'}]:`, err);
+    }
+
     switch (status) {
       case 400:
-        toast.error(validationMsg);
+        toast.error(err.message || validationMsg);
         break;
       case 401:
         toast.error('Tu sesión expiró. Inicia sesión nuevamente');
@@ -46,18 +51,18 @@ export function useErrorHandler() {
         toast.error(insufficientMsg);
         break;
       case 500:
-        toast.error('Error del servidor. Intenta de nuevo más tarde');
+        toast.error('Error interno del servidor. Contacta al administrador si el problema persiste');
         break;
       case 503:
         toast.error('El servicio no está disponible. Intenta más tarde');
         break;
       default:
-        toast.error(`No se pudo ${operation}. Intenta de nuevo`);
-    }
-
-    // Log para debugging (solo en desarrollo)
-    if (import.meta.env.DEV) {
-      console.error(`[Error ${status || 'NETWORK'}]:`, err);
+        // Si el error tiene mensaje del backend, mostrarlo
+        if (err?.message && !err.message.startsWith('Error ')) {
+          toast.error(err.message);
+        } else {
+          toast.error(`No se pudo ${operation}. Intenta de nuevo`);
+        }
     }
   }, []);
 

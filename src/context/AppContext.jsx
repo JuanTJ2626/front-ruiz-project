@@ -6,6 +6,7 @@ import { getNegociosUsuario, crearNegocio } from '../services/negocioService';
 import { getNegocioId, getUsuarioId } from '../services/config';
 import { toast } from 'sonner';
 
+
 const AppCtx = createContext(null);
 
 export function AppProvider({ children, isAuthenticated }) {
@@ -41,14 +42,17 @@ export function AppProvider({ children, isAuthenticated }) {
       const lista = Array.isArray(data) ? data : [];
       setNegocios(lista);
 
-      // Fallback: si el backend no devolvió negocioId en el login, tomar el primero
+      // Fallback: si el backend no devolvió negocioId en el login, tomar el primero disponible
       const negocioGuardado = getNegocioId();
-      if ((!negocioGuardado || negocioGuardado === 'null') && lista.length > 0) {
+      const sinNegocio = !negocioGuardado || negocioGuardado === 'null' || negocioGuardado === 'undefined';
+      if (sinNegocio && lista.length > 0) {
         const primero = lista[0];
         localStorage.setItem('negocioId', String(primero.id));
         setNegocioActivo(primero.id);
+        return primero.id; // devuelve el id para que inicializar pueda usarlo
       }
-    } catch { /* silencioso */ }
+      return negocioGuardado ? Number(negocioGuardado) : null;
+    } catch { return null; }
   }, [isAuthenticated]);
 
   /* Al autenticarse, carga negocios primero, luego datos del negocio activo */
@@ -56,10 +60,8 @@ export function AppProvider({ children, isAuthenticated }) {
     if (!isAuthenticated) return;
 
     const inicializar = async () => {
-      // 1. Cargar negocios y asignar el activo si falta
       await cargarNegocios();
-      // 2. Ahora sí hay negocioId en localStorage — cargar datos
-      recargar();
+      await recargar();
     };
 
     inicializar();
@@ -89,7 +91,7 @@ export function AppProvider({ children, isAuthenticated }) {
     <AppCtx.Provider value={{
       productos, categorias, negocios, dashData,
       negocioActivo, loading,
-      recargar, cambiarNegocio, handleCrearNegocio,
+      recargar, cambiarNegocio, handleCrearNegocio, cargarNegocios,
     }}>
       {children}
     </AppCtx.Provider>

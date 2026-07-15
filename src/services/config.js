@@ -31,18 +31,22 @@ export const fetchApi = async (endpoint, options = {}) => {
   const response = await fetch(url, options);
 
   if (!response.ok) {
-    // 403 — sin permisos (rol EMPLEADO intentando acción de ADMIN)
-    if (response.status === 403) {
-      throw new Error('No tienes permiso para realizar esta acción');
-    }
-    // 401 — token vencido o sin token
-    if (response.status === 401) {
-      throw new Error('Sesión expirada. Vuelve a iniciar sesión');
-    }
     let errorData;
     try { errorData = await response.json(); }
-    catch { errorData = { mensaje: 'Error en el servidor' }; }
-    throw new Error(errorData.mensaje || errorData.message || `Error ${response.status}`);
+    catch { errorData = {}; }
+
+    // Construye un error con la propiedad .status para que useErrorHandler lo lea
+    const message =
+      errorData.mensaje || errorData.message || errorData.error ||
+      (response.status === 500 ? 'Ha ocurrido un error interno en el servidor'
+       : response.status === 403 ? 'No tienes permiso para realizar esta acción'
+       : response.status === 401 ? 'Sesión expirada. Vuelve a iniciar sesión'
+       : `Error ${response.status}`);
+
+    const err = new Error(message);
+    err.status = response.status;      // ← clave: permite que useErrorHandler detecte el status
+    err.data   = errorData;
+    throw err;
   }
 
   if (response.status === 204) return null;

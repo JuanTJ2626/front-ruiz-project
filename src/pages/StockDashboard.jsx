@@ -22,6 +22,8 @@ import { useRol } from '../hooks/useRol'
 import { useApp } from '../context/AppContext'
 import { useStockStats } from '../hooks/useStockStats'
 import { useErrorHandler } from '../hooks/useErrorHandler'
+import { useFormValidation, schemas } from '../hooks/useFormValidation'
+import { FieldError, FieldInput, FieldSelect } from '../components/ui/field-error'
 
 const TIPO_CONFIG = {
   ENTRADA: { label: 'Entrada', icon: ArrowDownCircle, color: 'text-emerald-400', bg: 'border-emerald-500/30 bg-emerald-500/10' },
@@ -66,7 +68,7 @@ const MovimientoRow = ({ mov, index }) => {
 const StockDashboard = () => {
   const { productos = [], recargar } = useApp()
   const { isAdmin } = useRol()
-  const stats = useStockStats() // Hook compartido
+  const stats = useStockStats()
   const { handleError } = useErrorHandler()
   const [movimientos, setMovimientos] = useState([])
   const [loadingMovs, setLoadingMovs] = useState(true)
@@ -74,6 +76,9 @@ const StockDashboard = () => {
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({ productoId: '', tipo: 'ENTRADA', cantidad: '', motivo: '' })
+
+  // Schema fijo — el caso AJUSTE (cantidad ≥ 0) se maneja en handleSubmit
+  const { errors: errMov, validate: validateMov, touchField: touchMov, clearErrors: clearMov } = useFormValidation(schemas.movimiento)
 
   const cargarMovimientos = useCallback(async () => {
     try {
@@ -115,11 +120,23 @@ const StockDashboard = () => {
 
   const handleSubmit = async (e) => {
     e?.preventDefault()
-    if (!form.productoId) return toast.error('Selecciona un producto antes de continuar')
-    const cantidad = parseInt(form.cantidad)
-    if (!form.cantidad || isNaN(cantidad) || cantidad < (form.tipo === 'AJUSTE' ? 0 : 1)) {
-      return toast.error(form.tipo === 'AJUSTE' ? 'Ingresa el nuevo stock total (mínimo 0)' : 'La cantidad debe ser mayor a cero')
+
+    // Para AJUSTE la cantidad puede ser 0, validamos manualmente
+    if (form.tipo === 'AJUSTE') {
+      const valProd = !form.productoId ? 'Selecciona un producto' : null
+      const valCant = (form.cantidad === '' || isNaN(Number(form.cantidad)) || Number(form.cantidad) < 0)
+        ? 'Debe ser un número mayor o igual a cero' : null
+      if (valProd || valCant) {
+        // Reutiliza touchField para mostrar errores en la UI
+        if (valProd) touchMov('productoId', form.productoId)
+        if (valCant) touchMov('cantidad', form.cantidad)
+        return
+      }
+    } else {
+      if (!validateMov(form)) return
     }
+
+    const cantidad = parseInt(form.cantidad)
     setSaving(true)
     try {
       const usuarioId = Number(getUsuarioId())
@@ -133,6 +150,7 @@ const StockDashboard = () => {
       const tipoLabel = { ENTRADA: 'entrada', SALIDA: 'salida', AJUSTE: 'ajuste' }[form.tipo] || form.tipo.toLowerCase()
       toast.success(`Movimiento de ${tipoLabel} registrado`)
       setForm({ productoId: '', tipo: 'ENTRADA', cantidad: '', motivo: '' })
+      clearMov()
       setShowForm(false)
       cargarMovimientos()
       recargar()
@@ -278,10 +296,10 @@ const StockDashboard = () => {
             {/* Selector de producto */}
             <div className="space-y-2">
               <Label htmlFor="s-producto">Producto</Label>
-              <Select value={form.productoId} onValueChange={v => setForm({ ...form, productoId: v })}>
-                <SelectTrigger id="s-producto" className="h-11 rounded-xl">
+              <Select value={form.productoId} onValueChange={v => { setForm({ ...form, productoId: v }); touchMov('productoId', v); }}>
+                <FieldSelect id="s-producto" className="h-11 rounded-xl" error={errMov.productoId}>
                   <SelectValue placeholder="Selecciona un producto..." />
-                </SelectTrigger>
+                </FieldSelect>
                 <SelectContent>
                   {productos.map(p => (
                     <SelectItem key={p.id} value={String(p.id)}>
@@ -290,6 +308,7 @@ const StockDashboard = () => {
                   ))}
                 </SelectContent>
               </Select>
+              <FieldError error={errMov.productoId} />
             </div>
 
             {/* Tipo de movimiento */}
@@ -302,7 +321,7 @@ const StockDashboard = () => {
                     <button
                       key={key}
                       type="button"
-                      onClick={() => setForm({ ...form, tipo: key })}
+                      onClick={() => { setForm({ ...form, tipo: key, cantidad: '' }); clearMov(); }}
                       className={cn(
                         'flex flex-col items-center gap-1.5 rounded-xl border p-3 transition-all',
                         form.tipo === key ? cfg.bg : 'border-white/5 bg-white/[0.02] hover:border-white/10'
@@ -321,23 +340,23 @@ const StockDashboard = () => {
               <Label htmlFor="s-cant">
                 {form.tipo === 'AJUSTE' ? 'Nuevo stock total' : 'Cantidad'}
               </Label>
-              <Input
+              <FieldInput
                 id="s-cant" type="number"
                 min={form.tipo === 'AJUSTE' ? '0' : '1'}
                 value={form.cantidad}
-                onChange={e => setForm({ ...form, cantidad: e.target.value })}
-                required className="h-11 rounded-xl"
+                onChange={e => { setForm({ ...form, cantidad: e.target.value }); touchMov('cantidad', e.target.value); }}
+                error={errMov.cantidad}
+                className="h-11 rounded-xl"
                 placeholder={form.tipo === 'AJUSTE' ? 'Ej. 5 (el stock quedará en 5)' : 'Ej. 10'}
               />
-              {form.tipo === 'AJUSTE' && (
-                <p className="text-xs text-amber-500/80">
-                  💡 El stock del producto se fijará exactamente a este número, sin importar el valor actual.
-                </p>
+              <FieldError error={errMov.cantidad} />
+              {!errMov.cantidad && form.tipo === 'AJUSTE' && (
+                <p className="text-xs text-amber-500/80">💡 El stock del producto se fijará exactamente a este número, sin importar el valor actual.</p>
               )}
-              {form.tipo === 'ENTRADA' && (
+              {!errMov.cantidad && form.tipo === 'ENTRADA' && (
                 <p className="text-xs text-muted-foreground">Se sumará al stock actual.</p>
               )}
-              {form.tipo === 'SALIDA' && (
+              {!errMov.cantidad && form.tipo === 'SALIDA' && (
                 <p className="text-xs text-muted-foreground">Se restará del stock actual.</p>
               )}
             </div>

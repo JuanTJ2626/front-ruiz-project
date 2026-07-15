@@ -44,14 +44,6 @@ export function useUsuariosGestion() {
 
   // Crear usuario con negocioId incluido en el body (POST /api/auth/register)
   const handleCrearUsuario = useCallback(async (formData, negocioId) => {
-    if (!formData.username?.trim() || !formData.password?.trim()) {
-      toast.error('Usuario y contraseña son obligatorios');
-      return false;
-    }
-    if (formData.password.length < 6) {
-      toast.error('La contraseña debe tener al menos 6 caracteres');
-      return false;
-    }
     if (!negocioId) {
       toast.error('No se pudo determinar el negocio activo');
       return false;
@@ -59,10 +51,11 @@ export function useUsuariosGestion() {
 
     setSavingUser(true);
     try {
+      // username = email (ya viene sincronizado desde el formulario)
       await crearUsuario({
-        username:  formData.username.trim(),
+        username:  formData.email.trim(),
         password:  formData.password,
-        email:     formData.email   || undefined,
+        email:     formData.email.trim(),
         nombre:    formData.nombre  || undefined,
         rol:       formData.rol     || 'EMPLEADO',
         negocioId: Number(negocioId),

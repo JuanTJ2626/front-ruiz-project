@@ -1,92 +1,88 @@
-import { useState, useEffect, useCallback } from 'react'
-import { motion } from 'motion/react'
-import { Building2, Shield, User, Save, Check, Loader2,
-  Layers, Upload, Users, Plus, Trash2, KeyRound, Store, X } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Building2, Shield, User, Save, Loader2, Trash2, Users } from 'lucide-react'
 import { PageLayout } from '../components/PageLayout'
-import { AuroraCard, AuroraStatCard } from '../components/ui/aurora-card'
-import { Badge } from '../components/ui/badge'
+import { AuroraStatCard } from '../components/ui/aurora-card'
 import { Button } from '../components/ui/button'
-import { Input } from '../components/ui/input'
-import { Label } from '../components/ui/label'
-import { Avatar, AvatarFallback } from '../components/ui/avatar'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
-import { Separator } from '../components/ui/separator'
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '../components/ui/sheet'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../components/ui/dialog'
-import { Switch } from '../components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip'
+import { TooltipProvider } from '../components/ui/tooltip'
+import { ConfirmarEliminarDialog } from '../components/ui/ConfirmarEliminarDialog'
 import { toast } from 'sonner'
-import { cn } from '#/lib/utils'
-import { getNegociosUsuario } from '../services/negocioService'
+import { eliminarNegocio } from '../services/negocioService'
 import { getUsername, getRol, getNegocioId } from '../services/config'
 import { useRol } from '../hooks/useRol'
 import { useApp } from '../context/AppContext'
 import { useUsuariosGestion } from '../hooks/useUsuariosGestion'
 import { useNegocioForm } from '../hooks/useNegocioForm'
+import { useFormValidation, schemas } from '../hooks/useFormValidation'
+
+// Tabs extraídos
+import { TabNegocio }  from '../components/configuracion/TabNegocio'
+import { TabPerfil }   from '../components/configuracion/TabPerfil'
+import { TabUsuarios } from '../components/configuracion/TabUsuarios'
+
+// Sheets
+import { CrearUsuarioSheet }  from '../components/configuracion/CrearUsuarioSheet'
+import { CrearNegocioSheet }  from '../components/configuracion/CrearNegocioSheet'
+import { AsignarNegocioSheet } from '../components/configuracion/AsignarNegocioSheet'
 
 const ConfiguracionDashboard = () => {
   const { isAdmin } = useRol()
-  const { cambiarNegocio, handleCrearNegocio, negocioActivo: negocioActivoGlobal } = useApp()
+  const isSuperAdmin = getRol() === 'SUPER_ADMIN'
+  const { cambiarNegocio, handleCrearNegocio, cargarNegocios, negocios: negociosCtx, negocioActivo: negocioActivoGlobal } = useApp()
   const username = getUsername() || 'Usuario'
   const rol      = getRol()      || 'ADMIN'
 
-  // Hook de gestión de usuarios
+  // ── Usuarios ──────────────────────────────────────────────
   const {
-    usuarios,
-    loadingUsuarios,
-    savingUser,
-    handleCrearUsuario,
-    handleCambiarRol,
-    handleToggleActivo,
+    usuarios, loadingUsuarios, savingUser,
+    handleCrearUsuario, handleCambiarRol, handleToggleActivo,
     handleEliminarUsuario,
     handleAsignarNegocio: asignarNegocioUsuario,
-    handleQuitarNegocio: quitarNegocioUsuario,
+    handleQuitarNegocio:  quitarNegocioUsuario,
   } = useUsuariosGestion()
 
-  const [negocios, setNegocios]           = useState([])
-  const [negocioActivo, setNegocioAct]    = useState(Number(getNegocioId()) || null)
+  // ── Negocio activo ────────────────────────────────────────
+  const negocios = negociosCtx
+  const [negocioActivo, setNegocioAct] = useState(Number(getNegocioId()) || null)
   const negocioSeleccionado = negocios.find(n => n.id === negocioActivo)
-  
-  // Hook del formulario de negocio
-  const {
-    formNegocio,
-    savingNegocio,
-    uploadingLogo,
-    cargarDatosNegocio,
-    updateField,
-    handleGuardarNegocio: guardarNegocio,
-    handleSubirLogo,
-  } = useNegocioForm(negocioSeleccionado, () => cargar())
 
-  const [showFormNegocio, setShowFormNegocio] = useState(false)
-  const [formNuevoNegocio, setFormNuevoNegocio] = useState({ nombre: '', giro: '' })
-  const [savingNuevoNegocio, setSavingNuevoNegocio] = useState(false)
+  const { formNegocio, savingNegocio, uploadingLogo, cargarDatosNegocio, updateField, handleGuardarNegocio: guardarNegocio, handleSubirLogo } =
+    useNegocioForm(negocioSeleccionado, () => cargarNegocios())
 
-  const [showFormUser, setShowFormUser]   = useState(false)
-  const [deleteTarget, setDeleteTarget]   = useState(null)
-  const [formUser, setFormUser]           = useState({ username: '', email: '', password: '', nombre: '', rol: 'EMPLEADO' })
+  // ── Estado de formularios / modals ────────────────────────
+  const [showFormNegocio,   setShowFormNegocio]   = useState(false)
+  const [formNuevoNegocio,  setFormNuevoNegocio]  = useState({ nombre: '', giro: '' })
+  const [savingNuevoNeg,    setSavingNuevoNeg]    = useState(false)
 
-  const [assignTarget, setAssignTarget]   = useState(null)
-  const [assignNegocioId, setAssignNegocioId] = useState('')
-  const [savingAssign, setSavingAssign]   = useState(false)
+  const [showFormUser, setShowFormUser] = useState(false)
+  const [formUser,     setFormUser]     = useState({ username: '', email: '', password: '', nombre: '', rol: 'EMPLEADO' })
 
+  const [deleteTarget,       setDeleteTarget]       = useState(null)
+  const [assignTarget,       setAssignTarget]       = useState(null)
+  const [assignNegocioId,    setAssignNegocioId]    = useState('')
+  const [savingAssign,       setSavingAssign]       = useState(false)
+  const [deleteNegocioTarget, setDeleteNegocioTarget] = useState(null)
+  const [deletingNegocio,    setDeletingNegocio]   = useState(false)
+
+  // ── Validaciones ──────────────────────────────────────────
+  const { errors: errUser,    validate: validateUser,    touchField: touchUser,    clearErrors: clearUser    } = useFormValidation(schemas.usuario)
+  const { errors: errNegocio, validate: validateNegocio, touchField: touchNegocio, clearErrors: clearNegocio } = useFormValidation(schemas.negocio)
+
+  // ── Effects ───────────────────────────────────────────────
   useEffect(() => {
     if (negocioActivoGlobal) setNegocioAct(negocioActivoGlobal)
   }, [negocioActivoGlobal])
 
-  const cargar = useCallback(async () => {
-    try {
-      const data = await getNegociosUsuario()
-      const arr = Array.isArray(data) ? data : []
-      setNegocios(arr)
-      const activo = arr.find(n => n.id === negocioActivo) || arr[0]
-      if (activo) cargarDatosNegocio(activo)
-    } catch { /* sin negocios aún */ }
-  }, [negocioActivo, cargarDatosNegocio])
+  useEffect(() => {
+    if (negocios.length === 0) return
+    const activo = negocios.find(n => n.id === negocioActivo) || negocios[0]
+    if (activo) {
+      if (!negocioActivo || negocioActivo !== activo.id) setNegocioAct(activo.id)
+      cargarDatosNegocio(activo)
+    }
+  }, [negocios]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => { cargar() }, [cargar])
-
+  // ── Handlers ──────────────────────────────────────────────
   const handleSeleccionarNegocio = (negocio) => {
     setNegocioAct(negocio.id)
     cambiarNegocio(negocio.id)
@@ -95,521 +91,208 @@ const ConfiguracionDashboard = () => {
 
   const handleCrearEmpleado = async (e) => {
     e.preventDefault()
-    // Pasar el negocio activo del admin para asignárselo al empleado/admin nuevo
-    const success = await handleCrearUsuario(formUser, negocioActivo)
-    if (success) {
+    if (!validateUser(formUser)) return
+    const ok = await handleCrearUsuario(formUser, negocioActivo)
+    if (ok) {
       setFormUser({ username: '', email: '', password: '', nombre: '', rol: 'EMPLEADO' })
+      clearUser()
       setShowFormUser(false)
     }
   }
 
   const handleCambiarRolLocal = async (usuario) => {
-    // PROTECCIÓN: NO permitir cambiar el rol de SUPER_ADMIN
     if (usuario.rol === 'SUPER_ADMIN') {
       toast.error('🔒 No se puede cambiar el rol del SUPER_ADMIN')
       return
     }
-    
-    // Ciclo: EMPLEADO → ADMIN → EMPLEADO (no se puede llegar a SUPER_ADMIN desde aquí)
-    let nuevoRol = 'EMPLEADO'
-    if (usuario.rol === 'EMPLEADO') nuevoRol = 'ADMIN'
-    else if (usuario.rol === 'ADMIN') nuevoRol = 'EMPLEADO'
-    
+    if (usuario.username === username && usuario.rol === 'ADMIN') {
+      toast.error('⚠️ No puedes cambiar tu propio rol — perderías el acceso al panel')
+      return
+    }
+    const nuevoRol = usuario.rol === 'EMPLEADO' ? 'ADMIN' : 'EMPLEADO'
     await handleCambiarRol(usuario, nuevoRol)
   }
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteUserConfirm = async () => {
     if (!deleteTarget) return
-    const success = await handleEliminarUsuario(deleteTarget)
-    if (success) setDeleteTarget(null)
+    const ok = await handleEliminarUsuario(deleteTarget)
+    if (ok) setDeleteTarget(null)
   }
 
   const handleAsignarNegocio = async (e) => {
     e?.preventDefault()
     if (!assignTarget || !assignNegocioId) return
     setSavingAssign(true)
-    const success = await asignarNegocioUsuario(Number(assignTarget.id), Number(assignNegocioId), assignTarget.username)
-    if (success) {
-      setAssignTarget(null)
-      setAssignNegocioId('')
-    }
+    const ok = await asignarNegocioUsuario(Number(assignTarget.id), Number(assignNegocioId), assignTarget.username)
+    if (ok) { setAssignTarget(null); setAssignNegocioId('') }
     setSavingAssign(false)
   }
 
   const handleCrearNegocioLocal = async (e) => {
     e.preventDefault()
-    if (!formNuevoNegocio.nombre?.trim()) {
-      return toast.error('El nombre del negocio es obligatorio')
-    }
-    setSavingNuevoNegocio(true)
+    if (!validateNegocio(formNuevoNegocio)) return
+    setSavingNuevoNeg(true)
     try {
       const nuevo = await handleCrearNegocio({ ...formNuevoNegocio, nombre: formNuevoNegocio.nombre.trim() })
       toast.success(`Negocio "${formNuevoNegocio.nombre.trim()}" creado`)
       setFormNuevoNegocio({ nombre: '', giro: '' })
+      clearNegocio()
       setShowFormNegocio(false)
-      await cargar()
+      await cargarNegocios()
       if (nuevo?.id) cambiarNegocio(nuevo.id)
     } catch (err) {
       const status = err?.response?.status
-      if (status === 409) toast.error('Ya existe un negocio con ese nombre')
+      if (status === 409)      toast.error('Ya existe un negocio con ese nombre')
       else if (status === 403) toast.error('No tienes permiso para crear negocios')
-      else toast.error('No se pudo crear el negocio. Intenta de nuevo')
+      else                     toast.error('No se pudo crear el negocio. Intenta de nuevo')
+    } finally {
+      setSavingNuevoNeg(false)
     }
-    finally { setSavingNuevoNegocio(false) }
   }
 
-  const initials = username.slice(0, 2).toUpperCase()
+  const handleEliminarNegocioConfirm = async () => {
+    if (!deleteNegocioTarget) return
+    setDeletingNegocio(true)
+    try {
+      await eliminarNegocio(deleteNegocioTarget.id)
+      toast.success(`Negocio "${deleteNegocioTarget.nombre}" eliminado`)
+      setDeleteNegocioTarget(null)
+      await cargarNegocios()
+    } catch (err) {
+      const status = err?.status
+      if (status === 409)      toast.error('No se puede eliminar: el negocio tiene productos o usuarios asociados')
+      else if (status === 403) toast.error('No tienes permiso para eliminar negocios')
+      else                     toast.error('No se pudo eliminar el negocio. Intenta de nuevo')
+    } finally {
+      setDeletingNegocio(false)
+    }
+  }
 
+  // ── Render ────────────────────────────────────────────────
   return (
     <TooltipProvider>
-    <PageLayout title="Configuración" subtitle="Administra tu negocio, usuarios y preferencias."
-      actions={
-        <Button onClick={guardarNegocio} disabled={savingNegocio} className="gap-2 rounded-xl shadow-md">
-          {savingNegocio ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-          {savingNegocio ? 'Guardando...' : 'Guardar cambios'}
-        </Button>
-      }
-    >
-      <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-        <AuroraStatCard icon={Shield}    label="Rol Actual" value={rol}              sub="nivel de acceso" glow="violet" delay={160} />
-        <AuroraStatCard icon={User}      label="Usuario"    value={username}         sub="sesión activa"   glow="cyan"   delay={80} />
-        {isAdmin && <AuroraStatCard icon={Users}     label="Usuarios"  value={usuarios.length} sub="en el negocio" glow="emerald" delay={240} />}
-        {isAdmin && <AuroraStatCard icon={Building2} label="Negocios"  value={negocios.length} sub="vinculados"    glow="amber"   delay={320} />}
-      </div>
+      <PageLayout
+        title="Configuración"
+        subtitle="Administra tu negocio, usuarios y preferencias."
+        actions={
+          <Button onClick={guardarNegocio} disabled={savingNegocio} className="gap-2 rounded-xl shadow-md">
+            {savingNegocio ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+            {savingNegocio ? 'Guardando...' : 'Guardar cambios'}
+          </Button>
+        }
+      >
+        {/* KPIs */}
+        <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+          <AuroraStatCard icon={Shield}    label="Rol Actual" value={rol}            sub="nivel de acceso" glow="violet"  delay={80}  />
+          <AuroraStatCard icon={User}      label="Usuario"    value={username}       sub="sesión activa"   glow="cyan"    delay={160} />
+          {isAdmin && <AuroraStatCard icon={Users}     label="Usuarios"  value={usuarios.length} sub="en el negocio" glow="emerald" delay={240} />}
+          {isAdmin && <AuroraStatCard icon={Building2} label="Negocios"  value={negocios.length} sub="vinculados"    glow="amber"   delay={320} />}
+        </div>
 
-      {/* ── TABS PRINCIPALES ── */}
-      <Tabs defaultValue="negocio" className="w-full">
-        <TabsList className="mb-6 h-auto rounded-xl bg-muted/40 p-1 flex flex-wrap gap-1">
-          <TabsTrigger value="negocio"  className="rounded-lg px-4 py-2 text-sm font-semibold">Negocio</TabsTrigger>
-          <TabsTrigger value="perfil"   className="rounded-lg px-4 py-2 text-sm font-semibold">Perfil</TabsTrigger>
-          {isAdmin && <TabsTrigger value="usuarios" className="rounded-lg px-4 py-2 text-sm font-semibold">Usuarios</TabsTrigger>}
-        </TabsList>
+        {/* Tabs */}
+        <Tabs defaultValue="negocio" className="w-full">
+          <TabsList className="mb-6 flex h-auto flex-wrap gap-1 rounded-xl bg-muted/40 p-1">
+            <TabsTrigger value="negocio"  className="rounded-lg px-4 py-2 text-sm font-semibold">Negocio</TabsTrigger>
+            <TabsTrigger value="perfil"   className="rounded-lg px-4 py-2 text-sm font-semibold">Perfil</TabsTrigger>
+            {isAdmin && <TabsTrigger value="usuarios" className="rounded-lg px-4 py-2 text-sm font-semibold">Usuarios</TabsTrigger>}
+          </TabsList>
 
-        {/* ── TAB NEGOCIO ── */}
-        <TabsContent value="negocio" className="space-y-6">
-          <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-              <AuroraCard glow="emerald" className="h-full">
-                <div className="p-6">
-                  <div className="mb-5 flex items-center gap-3">
-                    <div className="aurora-icon-ring flex h-10 w-10 items-center justify-center rounded-xl"><Building2 size={18} /></div>
-                    <div><h2 className="font-heading text-lg font-bold text-foreground">Datos del Negocio</h2><p className="text-xs text-muted-foreground">Negocio activo</p></div>
-                  </div>
-                  <div className="flex flex-col gap-4">
-                    <div className="space-y-2">
-                      <Label>Nombre</Label>
-                      <Input value={formNegocio.nombre} onChange={e => updateField('nombre', e.target.value)} className="h-10 rounded-xl" placeholder="Mi Negocio" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Giro comercial</Label>
-                      <Input value={formNegocio.direccion || ''} onChange={e => updateField('direccion', e.target.value)} className="h-10 rounded-xl" placeholder="Ferretería, Abarrotes..." />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Logo del negocio</Label>
-                      {/* Tarjeta de logo */}
-                      <div className="relative flex flex-col items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-6">
-                        {formNegocio.logoUrl ? (
-                          /* Preview del logo actual */
-                          <div className="relative">
-                            <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-2xl border-2 border-white/10 bg-white/5 shadow-lg">
-                              <img src={formNegocio.logoUrl} alt="logo del negocio" className="h-full w-full object-contain p-2" />
-                            </div>
-                            {/* Badge de estado */}
-                            <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-400">
-                              Logo activo
-                            </span>
-                          </div>
-                        ) : (
-                          /* Placeholder cuando no hay logo */
-                          <div className="flex h-28 w-28 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-white/10 bg-white/[0.02]">
-                            <Upload size={24} className="text-muted-foreground/40" />
-                            <span className="text-[10px] text-muted-foreground/40">Sin logo</span>
-                          </div>
-                        )}
-
-                        {/* Botones de acción */}
-                        <div className="flex w-full flex-col gap-2">
-                          <label className={cn(
-                            'flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-400',
-                            uploadingLogo && 'cursor-not-allowed opacity-60'
-                          )}>
-                            {uploadingLogo ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
-                            {uploadingLogo ? 'Subiendo...' : formNegocio.logoUrl ? 'Cambiar logo' : 'Subir logo'}
-                            <input
-                              type="file"
-                              accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                              className="hidden"
-                              disabled={uploadingLogo}
-                              onChange={e => handleSubirLogo(e.target.files?.[0])}
-                            />
-                          </label>
-                          {formNegocio.logoUrl && (
-                            <button
-                              type="button"
-                              onClick={() => updateField('logoUrl', '')}
-                              className="flex items-center justify-center gap-2 rounded-xl border border-red-500/20 bg-red-500/5 py-2 text-xs font-medium text-red-400/70 transition-all hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-400"
-                            >
-                              <X size={13} /> Quitar logo
-                            </button>
-                          )}
-                        </div>
-                        <p className="text-center text-[11px] text-muted-foreground/50">
-                          PNG, JPG, WebP o SVG · Máx. 2MB
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </AuroraCard>
-            </motion.div>
-
-            {/* Mis negocios */}
-            {(negocios.length > 0 || isAdmin) && (
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-                <AuroraCard glow="blue" className="h-full">
-                  <div className="p-6">
-                    <div className="mb-4 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="aurora-icon-ring flex h-10 w-10 items-center justify-center rounded-xl"><Layers size={18} /></div>
-                        <div><h2 className="font-heading text-lg font-bold text-foreground">Mis Negocios</h2><p className="text-sm text-muted-foreground">Selecciona el activo</p></div>
-                      </div>
-                      <Button size="sm" onClick={() => setShowFormNegocio(true)} className="gap-2 rounded-xl">
-                        <Plus size={14} /> Nuevo
-                      </Button>
-                    </div>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      {negocios.map(n => (
-                        <button key={n.id} type="button" onClick={() => handleSeleccionarNegocio(n)}
-                          className={cn('flex flex-col items-start gap-2 rounded-xl border p-4 text-left transition-all',
-                            negocioActivo === n.id
-                              ? 'border-cyan-500/40 bg-cyan-500/10 shadow-[0_0_20px_-5px_rgba(6,182,212,0.3)]'
-                              : 'border-white/5 bg-white/[0.02] hover:border-white/10 hover:bg-white/[0.04]')}>
-                          <div className="flex w-full items-center justify-between">
-                            <Building2 size={16} className={negocioActivo === n.id ? 'text-cyan-400' : 'text-muted-foreground'} />
-                            {negocioActivo === n.id && <Badge className="border-0 bg-cyan-500/20 text-cyan-300 text-[10px]"><Check size={9} className="mr-1" />Activo</Badge>}
-                          </div>
-                          <p className="font-heading text-sm font-bold text-foreground">{n.nombre}</p>
-                          {n.giro && <p className="text-xs text-muted-foreground">{n.giro}</p>}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </AuroraCard>
-              </motion.div>
-            )}
-          </div>
-        </TabsContent>
-
-        {/* ── TAB PERFIL ── */}
-        <TabsContent value="perfil">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-            <AuroraCard glow="cyan" className="max-w-md">
-              <div className="p-6">
-                <div className="mb-5 flex items-center gap-3">
-                  <div className="aurora-icon-ring flex h-10 w-10 items-center justify-center rounded-xl"><User size={18} /></div>
-                  <div><h2 className="font-heading text-lg font-bold text-foreground">Perfil</h2><p className="text-xs text-muted-foreground">Tu cuenta</p></div>
-                </div>
-                <div className="mb-5 flex items-center gap-4">
-                  <Avatar className="h-16 w-16 border-2 border-cyan-500/30">
-                    <AvatarFallback className="bg-cyan-500/10 text-lg font-bold text-cyan-400">{initials}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-heading font-bold text-foreground">{username}</p>
-                    <Badge variant="outline" className="mt-1 border-violet-500/30 bg-violet-500/10 text-violet-400">{rol}</Badge>
-                  </div>
-                </div>
-                <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
-                  <p className="text-xs text-muted-foreground">El perfil se gestiona desde el backend. Contacta al administrador para cambios.</p>
-                </div>
-              </div>
-            </AuroraCard>
-          </motion.div>
-        </TabsContent>
-
-        {/* ── TAB USUARIOS (solo ADMIN) ── */}
-        {isAdmin && (
-          <TabsContent value="usuarios">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-              <AuroraCard glow="violet">
-                <div className="p-6">
-                  <div className="mb-5 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="aurora-icon-ring flex h-10 w-10 items-center justify-center rounded-xl"><Users size={18} /></div>
-                      <div>
-                        <h2 className="font-heading text-lg font-bold text-foreground">Gestión de Usuarios</h2>
-                        <p className="text-sm text-muted-foreground">Crea empleados y gestiona roles</p>
-                      </div>
-                    </div>
-                    <Button onClick={() => setShowFormUser(true)} className="gap-2 rounded-xl" size="sm">
-                      <Plus size={14} /> Nuevo usuario
-                    </Button>
-                  </div>
-
-                  {loadingUsuarios ? (
-                    <div className="flex flex-col gap-2">
-                      {[1,2,3].map(i => (
-                        <div key={i} className="flex items-center gap-4 rounded-xl border border-white/5 bg-white/[0.02] p-4">
-                          <div className="h-10 w-10 animate-pulse rounded-full bg-white/10" />
-                          <div className="flex-1 space-y-2">
-                            <div className="h-3 w-32 animate-pulse rounded bg-white/10" />
-                            <div className="h-2.5 w-48 animate-pulse rounded bg-white/5" />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : usuarios.length === 0 ? (
-                    <div className="flex flex-col items-center py-10 text-center">
-                      <Users size={32} className="mb-3 text-muted-foreground/30" />
-                      <p className="text-sm text-muted-foreground">No hay usuarios registrados</p>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-2">
-                      {usuarios.map((u) => (
-                        <div key={u.id} className="flex flex-col gap-3 rounded-xl border border-white/5 bg-white/[0.02] p-4 transition-all hover:border-white/10 sm:flex-row sm:items-center">
-                          <Avatar className="hidden h-10 w-10 shrink-0 border border-white/10 sm:flex">
-                            <AvatarFallback className="bg-muted text-sm font-bold">{(u.username || u.nombre || '?').slice(0,2).toUpperCase()}</AvatarFallback>
-                          </Avatar>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <Avatar className="h-7 w-7 shrink-0 border border-white/10 sm:hidden">
-                                <AvatarFallback className="bg-muted text-xs font-bold">{(u.username || u.nombre || '?').slice(0,2).toUpperCase()}</AvatarFallback>
-                              </Avatar>
-                              <span className="text-sm font-bold text-foreground">{u.username || u.nombre}</span>
-                              <Badge variant="outline" className={cn('text-[10px] font-bold',
-                                u.rol === 'SUPER_ADMIN' ? 'border-fuchsia-500/30 bg-fuchsia-500/10 text-fuchsia-400' :
-                                u.rol === 'ADMIN' ? 'border-violet-500/30 bg-violet-500/10 text-violet-400' : 
-                                'border-cyan-500/30 bg-cyan-500/10 text-cyan-400'
-                              )}>{u.rol}</Badge>
-                            </div>
-                            {/* Negocio asignado — solo relevante para EMPLEADOS */}
-                            {u.rol === 'EMPLEADO' && (
-                              <div className="mt-0.5 flex items-center gap-1.5">
-                                {u.negocioNombre ? (
-                                  <span className="flex items-center gap-1 text-xs">
-                                    <Building2 size={10} className="text-emerald-400" />
-                                    <span className="text-emerald-400/80">{u.negocioNombre}</span>
-                                  </span>
-                                ) : (
-                                  <span className="text-xs text-amber-500/70">Sin negocio asignado</span>
-                                )}
-                              </div>
-                            )}
-                            {u.email && <p className="text-[11px] text-muted-foreground/60">{u.email}</p>}
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            {/* Switch activar/desactivar — BLOQUEADO para SUPER_ADMIN */}
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <div className="flex items-center gap-1.5">
-                                  <Switch
-                                    checked={u.activo !== false}
-                                    onCheckedChange={() => u.rol !== 'SUPER_ADMIN' && handleToggleActivo(u)}
-                                    disabled={u.rol === 'SUPER_ADMIN'}
-                                    className={cn(
-                                      "data-[state=checked]:bg-emerald-500",
-                                      u.rol === 'SUPER_ADMIN' && "opacity-50 cursor-not-allowed"
-                                    )}
-                                  />
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                {u.rol === 'SUPER_ADMIN' 
-                                  ? '🔒 El SUPER_ADMIN no puede desactivarse' 
-                                  : (u.activo !== false ? 'Desactivar usuario' : 'Activar usuario')}
-                              </TooltipContent>
-                            </Tooltip>
-                            <Separator orientation="vertical" className="h-5 opacity-30" />
-                            {/* Asignar / quitar negocio — solo para EMPLEADOS */}
-                            {u.rol === 'EMPLEADO' && (
-                              <>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg"
-                                      onClick={() => { setAssignTarget(u); setAssignNegocioId('') }}>
-                                      <Store size={14} />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>{u.negocioId ? 'Cambiar negocio' : 'Asignar negocio'}</TooltipContent>
-                                </Tooltip>
-                                {u.negocioId && (
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button size="icon" variant="ghost"
-                                        className="h-8 w-8 rounded-lg hover:bg-amber-500/10 hover:text-amber-500"
-                                        onClick={() => quitarNegocioUsuario(u.id, u.username)}>
-                                        <X size={14} />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Quitar negocio</TooltipContent>
-                                  </Tooltip>
-                                )}
-                                <Separator orientation="vertical" className="h-5 opacity-30" />
-                              </>
-                            )}
-                            {/* Cambiar rol — OCULTO para SUPER_ADMIN */}
-                            {u.rol !== 'SUPER_ADMIN' && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg"
-                                    onClick={() => handleCambiarRolLocal(u)}>
-                                    <KeyRound size={14} />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Cambiar rol (EMPLEADO ⇄ ADMIN)</TooltipContent>
-                              </Tooltip>
-                            )}
-                            {/* Eliminar — OCULTO para SUPER_ADMIN */}
-                            {u.rol !== 'SUPER_ADMIN' && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg hover:bg-red-500/10 hover:text-red-500"
-                                    onClick={() => setDeleteTarget(u)}>
-                                    <Trash2 size={14} />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Eliminar usuario</TooltipContent>
-                              </Tooltip>
-                            )}
-                            {/* Indicador visual para SUPER_ADMIN protegido */}
-                            {u.rol === 'SUPER_ADMIN' && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-fuchsia-500/10 border border-fuchsia-500/20">
-                                    <Shield size={14} className="text-fuchsia-400" />
-                                  </div>
-                                </TooltipTrigger>
-                                <TooltipContent>🔒 Cuenta protegida - No se puede modificar ni eliminar</TooltipContent>
-                              </Tooltip>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </AuroraCard>
-            </motion.div>
+          <TabsContent value="negocio" className="space-y-6">
+            <TabNegocio
+              formNegocio={formNegocio}
+              updateField={updateField}
+              uploadingLogo={uploadingLogo}
+              handleSubirLogo={handleSubirLogo}
+              negocios={negocios}
+              negocioActivo={negocioActivo}
+              isAdmin={isAdmin}
+              isSuperAdmin={isSuperAdmin}
+              onSeleccionarNegocio={handleSeleccionarNegocio}
+              onNuevoNegocio={() => setShowFormNegocio(true)}
+              onEliminarNegocio={setDeleteNegocioTarget}
+            />
           </TabsContent>
-        )}
-      </Tabs>
-    </PageLayout>
 
-    {/* Sheet: crear negocio */}
-    <Sheet open={showFormNegocio} onOpenChange={setShowFormNegocio}>
-      <SheetContent side="right" className="flex w-[440px] max-w-full flex-col gap-0 border-l p-0">
-        <SheetHeader className="shrink-0 border-b bg-muted/20 px-8 py-6">
-          <SheetTitle className="text-xl font-bold">Nuevo Negocio</SheetTitle>
-          <SheetDescription>Crea un nuevo negocio asociado a tu cuenta.</SheetDescription>
-        </SheetHeader>
-        <form onSubmit={handleCrearNegocioLocal} className="flex flex-1 flex-col gap-5 overflow-y-auto px-8 py-6">
-          <div className="space-y-2">
-            <Label>Nombre del negocio *</Label>
-            <Input value={formNuevoNegocio.nombre} onChange={e => setFormNuevoNegocio(f => ({...f, nombre: e.target.value}))} required className="h-11 rounded-xl" placeholder="Ferretería El Clavo" autoFocus />
-          </div>
-          <div className="space-y-2">
-            <Label>Giro comercial</Label>
-            <Input value={formNuevoNegocio.giro} onChange={e => setFormNuevoNegocio(f => ({...f, giro: e.target.value}))} className="h-11 rounded-xl" placeholder="Ferretería, Abarrotes..." />
-          </div>
-        </form>
-        <div className="flex shrink-0 justify-end gap-3 border-t bg-muted/20 px-8 py-5">
-          <Button variant="outline" onClick={() => setShowFormNegocio(false)} className="rounded-xl">Cancelar</Button>
-          <Button onClick={handleCrearNegocioLocal} disabled={savingNuevoNegocio} className="gap-2 rounded-xl">
-            {savingNuevoNegocio ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-            {savingNuevoNegocio ? 'Creando...' : 'Crear negocio'}
-          </Button>
-        </div>
-      </SheetContent>
-    </Sheet>
+          <TabsContent value="perfil">
+            <TabPerfil username={username} rol={rol} />
+          </TabsContent>
 
-    {/* Sheet: crear usuario */}
-    <Sheet open={showFormUser} onOpenChange={setShowFormUser}>
-      <SheetContent side="right" className="flex w-[440px] max-w-full flex-col gap-0 border-l p-0">
-        <SheetHeader className="shrink-0 border-b bg-muted/20 px-8 py-6">
-          <SheetTitle className="text-xl font-bold">Nuevo Usuario</SheetTitle>
-          <SheetDescription>Crea un empleado o administrador para tu negocio.</SheetDescription>
-        </SheetHeader>
-        <form onSubmit={handleCrearEmpleado} className="flex flex-1 flex-col gap-5 overflow-y-auto px-8 py-6">
-          <div className="space-y-2"><Label>Usuario *</Label>
-            <Input value={formUser.username} onChange={e=>setFormUser(f=>({...f,username:e.target.value}))} required className="h-11 rounded-xl" placeholder="empleado1" /></div>
-          <div className="space-y-2"><Label>Correo *</Label>
-            <Input type="email" value={formUser.email} onChange={e=>setFormUser(f=>({...f,email:e.target.value}))} required className="h-11 rounded-xl" placeholder="empleado@mail.com" /></div>
-          <div className="space-y-2"><Label>Contraseña *</Label>
-            <Input type="password" value={formUser.password} onChange={e=>setFormUser(f=>({...f,password:e.target.value}))} required className="h-11 rounded-xl" placeholder="••••••••" /></div>
-          <div className="space-y-2"><Label>Nombre completo</Label>
-            <Input value={formUser.nombre} onChange={e=>setFormUser(f=>({...f,nombre:e.target.value}))} className="h-11 rounded-xl" placeholder="Carlos López" /></div>
-          <div className="space-y-2">
-            <Label>Rol</Label>
-            <div className="grid grid-cols-2 gap-3">
-              {['EMPLEADO','ADMIN'].map(r => (
-                <button key={r} type="button" onClick={()=>setFormUser(f=>({...f,rol:r}))}
-                  className={cn('flex items-center justify-center gap-2 rounded-xl border p-3 text-sm font-semibold transition-all',
-                    formUser.rol === r ? 'border-violet-500/40 bg-violet-500/15 text-violet-400' : 'border-white/10 bg-white/[0.02] text-muted-foreground hover:border-white/20')}>
-                  {r === 'ADMIN' ? <Shield size={15} /> : <User size={15} />} {r}
-                </button>
-              ))}
-            </div>
-          </div>
-        </form>
-        <div className="flex shrink-0 justify-end gap-3 border-t bg-muted/20 px-8 py-5">
-          <Button variant="outline" onClick={()=>setShowFormUser(false)} className="rounded-xl">Cancelar</Button>
-          <Button onClick={handleCrearEmpleado} disabled={savingUser} className="gap-2 rounded-xl">
-            {savingUser ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-            {savingUser ? 'Creando...' : 'Crear usuario'}
-          </Button>
-        </div>
-      </SheetContent>
-    </Sheet>
+          {isAdmin && (
+            <TabsContent value="usuarios">
+              <TabUsuarios
+                usuarios={usuarios}
+                loadingUsuarios={loadingUsuarios}
+                currentUsername={username}
+                onNuevoUsuario={() => setShowFormUser(true)}
+                onToggleActivo={handleToggleActivo}
+                onCambiarRol={handleCambiarRolLocal}
+                onEliminar={setDeleteTarget}
+                onAsignarNegocio={user => { setAssignTarget(user); setAssignNegocioId('') }}
+                onQuitarNegocio={quitarNegocioUsuario}
+              />
+            </TabsContent>
+          )}
+        </Tabs>
+      </PageLayout>
 
-    {/* Sheet: asignar negocio */}
-    <Sheet open={!!assignTarget} onOpenChange={open => !open && setAssignTarget(null)}>
-      <SheetContent side="right" className="flex w-[400px] max-w-full flex-col gap-0 border-l p-0">
-        <SheetHeader className="shrink-0 border-b bg-muted/20 px-8 py-6">
-          <SheetTitle className="text-xl font-bold">Asignar Negocio</SheetTitle>
-          <SheetDescription>Elige el negocio para <span className="font-semibold text-foreground">{assignTarget?.username}</span>.</SheetDescription>
-        </SheetHeader>
-        <div className="flex flex-1 flex-col gap-5 px-8 py-6">
-          <div className="space-y-2">
-            <Label>Negocio *</Label>
-            <Select value={assignNegocioId} onValueChange={setAssignNegocioId}>
-              <SelectTrigger className="h-11 rounded-xl">
-                <SelectValue placeholder="Selecciona un negocio..." />
-              </SelectTrigger>
-              <SelectContent>
-                {negocios.map(n => (
-                  <SelectItem key={n.id} value={String(n.id)}>{n.nombre}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <div className="flex shrink-0 justify-end gap-3 border-t bg-muted/20 px-8 py-5">
-          <Button variant="outline" onClick={() => setAssignTarget(null)} className="rounded-xl">Cancelar</Button>
-          <Button onClick={handleAsignarNegocio} disabled={savingAssign || !assignNegocioId} className="gap-2 rounded-xl">
-            {savingAssign ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-            {savingAssign ? 'Asignando...' : 'Asignar'}
-          </Button>
-        </div>
-      </SheetContent>
-    </Sheet>
+      {/* ── Sheets ── */}
+      <CrearNegocioSheet
+        open={showFormNegocio}
+        onOpenChange={setShowFormNegocio}
+        formNuevoNegocio={formNuevoNegocio}
+        setFormNuevoNegocio={setFormNuevoNegocio}
+        saving={savingNuevoNeg}
+        onSubmit={handleCrearNegocioLocal}
+        onCancel={() => setShowFormNegocio(false)}
+        errNegocio={errNegocio}
+        touchNegocio={touchNegocio}
+      />
 
-    {/* Dialog: confirmar eliminación */}
-    <Dialog open={!!deleteTarget} onOpenChange={open => !open && setDeleteTarget(null)}>
-      <DialogContent className="max-w-sm rounded-[24px] p-6">
-        <DialogHeader>
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
-            <Trash2 size={28} className="text-red-600" />
-          </div>
-          <DialogTitle className="text-center text-xl">¿Eliminar usuario?</DialogTitle>
-          <DialogDescription className="text-center pt-2">
-            Se eliminará <span className="font-semibold text-foreground">"{deleteTarget?.username}"</span> permanentemente.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter className="gap-3 mt-4">
-          <Button variant="outline" className="flex-1 rounded-xl" onClick={()=>setDeleteTarget(null)}>Cancelar</Button>
-          <Button variant="destructive" className="flex-1 rounded-xl" onClick={handleDeleteConfirm}>Eliminar</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      <CrearUsuarioSheet
+        open={showFormUser}
+        onOpenChange={setShowFormUser}
+        formUser={formUser}
+        setFormUser={setFormUser}
+        saving={savingUser}
+        onSubmit={handleCrearEmpleado}
+        onCancel={() => { setShowFormUser(false); clearUser() }}
+        errUser={errUser}
+        touchUser={touchUser}
+      />
+
+      <AsignarNegocioSheet
+        open={!!assignTarget}
+        onOpenChange={open => !open && setAssignTarget(null)}
+        assignTarget={assignTarget}
+        assignNegocioId={assignNegocioId}
+        setAssignNegocioId={setAssignNegocioId}
+        negocios={negocios}
+        saving={savingAssign}
+        onSubmit={handleAsignarNegocio}
+        onCancel={() => setAssignTarget(null)}
+      />
+
+      {/* ── Dialogs de confirmación ── */}
+      <ConfirmarEliminarDialog
+        open={!!deleteTarget}
+        onOpenChange={open => !open && setDeleteTarget(null)}
+        icon={<Trash2 size={28} className="text-red-600" />}
+        title="¿Eliminar usuario?"
+        description={<>Se eliminará <span className="font-semibold text-foreground">"{deleteTarget?.username}"</span> permanentemente.</>}
+        onConfirm={handleDeleteUserConfirm}
+        onCancel={() => setDeleteTarget(null)}
+      />
+
+      <ConfirmarEliminarDialog
+        open={!!deleteNegocioTarget}
+        onOpenChange={open => !open && setDeleteNegocioTarget(null)}
+        icon={<Building2 size={28} className="text-red-600" />}
+        title="¿Eliminar negocio?"
+        description={<>Se eliminará <span className="font-semibold text-foreground">"{deleteNegocioTarget?.nombre}"</span> permanentemente. Esta acción no se puede deshacer.</>}
+        loading={deletingNegocio}
+        onConfirm={handleEliminarNegocioConfirm}
+        onCancel={() => setDeleteNegocioTarget(null)}
+      />
     </TooltipProvider>
   )
 }
