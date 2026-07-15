@@ -288,7 +288,7 @@ const ConfiguracionDashboard = () => {
         onOpenChange={open => !open && setDeleteNegocioTarget(null)}
         icon={<Building2 size={28} className="text-red-600" />}
         title="¿Eliminar negocio?"
-        description={<>Se eliminará <span className="font-semibold text-foreground">"{deleteNegocioTarget?.nombre}"</span> permanentemente. Esta acción no se puede deshacer.</>}
+        description={<>Se eliminará <span className="font-semibold text-foreground">"{deleteNegocioTarget?.nombre}"</span> permanentemente. Esta acción no se puede deshacer.     Antes de eliminar este negocio, debes eliminar todos los productos, movimientos y proveedores asociados.</>}
         loading={deletingNegocio}
         onConfirm={handleEliminarNegocioConfirm}
         onCancel={() => setDeleteNegocioTarget(null)}
